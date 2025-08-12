@@ -28,7 +28,14 @@ export type Friend = { id: string; username: string; fullName: string; avatar?: 
 
 export type Group = { id: string; name: string; image?: string; members: string[] };
 
-export type AlbumVideo = { id: string; uri: string; title: string; description: string };
+// CHANGED: AlbumVideo ora supporta risposte video
+export type AlbumVideo = {
+  id: string;
+  uri: string;
+  title: string;
+  description: string;
+  replies?: AlbumVideo[]; // NEW: risposte video al singolo video
+};
 
 // CHANGED: Album esteso con permessi (ownerId, contributors, viewers?)
 export type Album = {
@@ -98,6 +105,9 @@ export type DataContextType = {
   updateAlbum: (id: string, updates: Partial<Album>) => void;
   deleteAlbum: (id: string) => void;
   addVideoToAlbum: (args: { albumId: string; video: AlbumVideo }) => void;
+
+  // NEW: video-replies
+  addVideoReply: (args: { albumId: string; parentVideoId: string; reply: AlbumVideo }) => void;
 
   // NEW: helper gestione permessi/contributori
   canUserUploadToAlbum: (userId: string, album: Album) => boolean;
@@ -298,6 +308,30 @@ export default function App() {
     // TODO(api): POST /albums/:id/uploads { file... }
   };
 
+  // NEW: aggiunge una risposta video a un video esistente nell'album
+  const addVideoReply: DataContextType['addVideoReply'] = ({ albumId, parentVideoId, reply }) => {
+    // Guard permessi lato client (owner/contributor)
+    const album = albums.find(a => a.id === albumId);
+    if (!album) return;
+    if (!canUserUploadToAlbum(currentUser, album)) {
+      Alert.alert('Accesso negato', 'Non puoi rispondere con un video in questo album.');
+      return;
+    }
+
+    setAlbums(prev =>
+      prev.map(a => {
+        if (a.id !== albumId) return a;
+        const videos = a.videos.map(v =>
+          v.id === parentVideoId
+            ? { ...v, replies: [reply, ...(v.replies ?? [])] } // NEW: inserisce in testa
+            : v
+        );
+        return { ...a, videos };
+      })
+    );
+    // TODO(api): POST /albums/:albumId/videos/:parentVideoId/replies
+  };
+
   // NEW: gestione contributors (multi-add e single-remove)
   const addAlbumContributors: DataContextType['addAlbumContributors'] = (albumId, friendIds) => {
     setAlbums(prev =>
@@ -361,6 +395,7 @@ export default function App() {
       updateAlbum,
       deleteAlbum,
       addVideoToAlbum,
+      addVideoReply,       // NEW
       canUserUploadToAlbum: canUserUploadToAlbumCtx, // NEW
       addAlbumContributors,                           // NEW
       removeAlbumContributor,                         // NEW

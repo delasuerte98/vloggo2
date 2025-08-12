@@ -1,6 +1,4 @@
 // src/screens/Profile/AlbumDetail.tsx
-// CHANGED: mostra "Aggiungi video" solo se owner/contributor
-
 import React, { useContext, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, Pressable } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -13,7 +11,7 @@ import { colors } from '../../theme/colors';
 export default function AlbumDetail() {
   const route = useRoute<any>();
   const navigation = useNavigation();
-  const { albums, groups, currentUser, canUserUploadToAlbum } = useContext(DataContext); // CHANGED
+  const { albums, groups, currentUser, canUserUploadToAlbum } = useContext(DataContext);
 
   const albumId = route.params?.albumId;
   const album = albums.find(a => a.id === albumId);
@@ -27,7 +25,6 @@ export default function AlbumDetail() {
     [album, currentUser, canUserUploadToAlbum]
   );
 
-  // Adatta i video dell’album alla shape che si aspetta VideoCard: { item: FeedItem }
   const items: FeedItem[] = useMemo(() => {
     if (!album) return [];
     const group = groups.find(g => g.id === album.groupId);
@@ -46,9 +43,7 @@ export default function AlbumDetail() {
   }, [album, groups, currentUser]);
 
   const onAddVideo = () => {
-    // Naviga alla schermata di upload; se gestisci parametri, puoi usare preselectedAlbumId
     navigation.navigate('Upload' as never, { preselectedAlbumId: album?.id } as never);
-    // TODO(api): in futuro l’upload allegherà albumId al backend
   };
 
   if (!album) {
@@ -61,35 +56,36 @@ export default function AlbumDetail() {
 
   return (
     <View style={styles.container}>
-      {canUpload && (
-        <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+      <View style={styles.topBar}>
+        <Text style={styles.topBarTitle}>{album.title}</Text>
+        {canUpload && (
           <Pressable
             onPress={onAddVideo}
-            style={{
-              backgroundColor: colors.primary,
-              paddingVertical: 12,
-              borderRadius: 12,
-              alignItems: 'center',
-              flexDirection: 'row',
-              justifyContent: 'center',
-              gap: 8,
-            }}
+            style={styles.addBtn}
             accessibilityRole="button"
             accessibilityLabel="Aggiungi video a questo album"
           >
             <Ionicons name="add-circle-outline" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '700' }}>Aggiungi video</Text>
+            <Text style={styles.addBtnText}>Video</Text>
           </Pressable>
-        </View>
-      )}
+        )}
+      </View>
 
+      {/* Lista video */}
       <FlatList
-        data={items}
-        keyExtractor={(it) => it.id}
-        renderItem={({ item }) => <VideoCard item={item} />}
-        ListEmptyComponent={<Text style={styles.emptyText}>Nessun video in questo album</Text>}
-        contentContainerStyle={items.length === 0 ? { flex: 1, justifyContent: 'center' } : undefined}
-      />
+  data={items}
+  keyExtractor={(it) => it.id}
+  renderItem={({ item }) => <VideoCard item={item} />}
+  ListEmptyComponent={<Text style={styles.emptyText}>Nessun video in questo album</Text>}
+  contentContainerStyle={{
+    padding: 16,
+    paddingBottom: 24,
+    ...(items.length === 0 ? { flex: 1, justifyContent: 'center' } : null),
+  }}
+  ItemSeparatorComponent={() => <View style={{ height: 16 }} />} // ← SPAZIO TRA LE CARD
+  showsVerticalScrollIndicator={false}
+/>
+
     </View>
   );
 }

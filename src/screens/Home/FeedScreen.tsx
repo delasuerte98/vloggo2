@@ -19,11 +19,12 @@ export default function FeedScreen() {
     <SafeAreaView style={styles.container}>
       <Text style={[typography.title, { color: colors.text, margin: spacing.lg }]}>Feed</Text>
       <FlatList
-        data={feedFriends}
-        renderItem={({ item }) => <VideoCard item={item} />}
-        keyExtractor={(it) => it.id}
-        contentContainerStyle={styles.listContent}
-      />
+  data={feedFriends}
+  renderItem={({ item }) => <VideoCard item={item} />}
+  keyExtractor={(it) => it.id}
+  contentContainerStyle={styles.listContent}
+  ItemSeparatorComponent={() => <View style={{ height: 16 }} />} // ← SPAZIO TRA LE CARD
+/>
     </SafeAreaView>
   );
 }

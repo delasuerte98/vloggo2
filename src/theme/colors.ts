@@ -1,15 +1,14 @@
 export const colors = {
-    primary: '#2563eb',
-    primaryDark: '#1e3a8a',
-    primaryLight: '#dbeafe', // azzurrino per highlight selezioni
-    background: '#f9fafb',
-    surface: '#f3f4f6',
-    white: '#ffffff',
-    text: '#111827',
-    muted: '#6b7280',
-    border: '#e5e7eb',
-    overlay: 'rgba(0,0,0,0.5)',
-    danger: '#ef4444',
-    success: '#10b981',
-  };
-  
+  primary: '#2563EB',      // blu vivo ma più profondo del vecchio
+  primaryLight: '#E3ECFB', // blu chiarissimo, non invadente
+  primaryDark: '#1E3A8A',  // blu scuro elegante
+  background: '#F4F6F9',   // leggermente più luminoso del vecchio
+  surface: '#FFFFFF',
+  white: '#FFFFFF',
+  text: '#111827',
+  muted: '#6B7280',        // grigio moderno
+  border: '#E5E7EB',
+  overlay: 'rgba(0,0,0,0.5)',
+  danger: '#EF4444',
+  success: '#10B981',
+};
