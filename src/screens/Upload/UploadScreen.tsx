@@ -1,10 +1,9 @@
 // src/screens/Upload/UploadScreen.tsx
-// CHANGED: mostra solo album caricabili (permessi) + badge "Condiviso" e creazione album con contributors
-
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, Alert, TextInput, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './UploadScreen.styles';
 import { typography } from '../../theme/typography';
@@ -26,8 +25,8 @@ export default function UploadScreen() {
     createAlbum,
     addVideoToAlbum,
     createGroup,
-    canUserUploadToAlbum, // NEW
-    currentUser,          // NEW
+    canUserUploadToAlbum,
+    currentUser,
   } = useContext(DataContext);
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -39,12 +38,37 @@ export default function UploadScreen() {
   const [albumModal, setAlbumModal] = useState(false);
   const [groupModal, setGroupModal] = useState(false);
 
+  const videoRef = useRef<Video>(null);
+  const [posterUri, setPosterUri] = useState<string | undefined>(undefined);
+  const [showPoster, setShowPoster] = useState<boolean>(false);
+  const [videoDuration, setVideoDuration] = useState<string | null>(null);
+
+  const canUpload = !!videoUri && title.trim().length > 0;
+
   useEffect(() => {
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       setHasPermission(status === 'granted');
     })();
   }, []);
+
+  const formatDuration = (millis: number) => {
+    const totalSec = Math.floor(millis / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const generatePoster = async (uri: string) => {
+    try {
+      const { uri: thumb } = await VideoThumbnails.getThumbnailAsync(uri, { time: 800 });
+      setPosterUri(thumb);
+      setShowPoster(true);
+    } catch {
+      setPosterUri(undefined);
+      setShowPoster(false);
+    }
+  };
 
   const pickVideo = async () => {
     if (hasPermission === false) {
@@ -56,16 +80,18 @@ export default function UploadScreen() {
       allowsEditing: false,
       quality: 1,
     });
-    if (!result.canceled && result.assets?.length) setVideoUri(result.assets[0].uri);
+    if (!result.canceled && result.assets?.length) {
+      const uri = result.assets[0].uri;
+      setVideoUri(uri);
+      await generatePoster(uri);
+    }
   };
 
-  // NEW: solo album su cui l'utente può caricare
   const allowedAlbums = useMemo(
     () => albums.filter(a => canUserUploadToAlbum(currentUser, a)),
     [albums, currentUser, canUserUploadToAlbum]
   );
 
-  // NEW: opzioni con badge "Condiviso" (contributors > 0)
   const albumOptions: AlbumOption[] = useMemo(
     () => [
       { id: 'none', title: 'Nessun album' },
@@ -86,7 +112,6 @@ export default function UploadScreen() {
     let albumIdToUse: string | undefined = undefined;
 
     if (selectedAlbumId !== 'none' && selectedAlbumId !== 'create') {
-      // Guard rail extra (anche se già filtriamo)
       const chosen = albums.find(a => a.id === selectedAlbumId);
       if (chosen && !canUserUploadToAlbum(currentUser, chosen)) {
         Alert.alert('Non hai i permessi', 'Non puoi caricare in questo album.');
@@ -114,12 +139,15 @@ export default function UploadScreen() {
     setDescription('');
     setSelectedGroups([]);
     setSelectedAlbumId('none');
+    setPosterUri(undefined);
+    setShowPoster(false);
+    setVideoDuration(null);
+
     Alert.alert('Caricato', 'Video aggiunto (album e feed).');
   };
 
-  // CHANGED: supporta contributors dalla modal
   const onCreateAlbum = (data: { title: string; coverUri?: string; contributors?: string[] }) => {
-    const newAlbum = createAlbum(data); // createAlbum setta ownerId=currentUser e contributors
+    const newAlbum = createAlbum(data);
     setAlbumModal(false);
     setSelectedAlbumId(newAlbum.id);
   };
@@ -127,125 +155,202 @@ export default function UploadScreen() {
   const onCreateGroup = (data: { name: string; image?: string; memberUsernames: string[] }) => {
     const g = createGroup(data);
     setGroupModal(false);
-    setSelectedGroups(prev => [...prev, g.id]); // seleziona subito il gruppo creato
+    setSelectedGroups(prev => [...prev, g.id]);
+  };
+
+  const handlePlay = async () => {
+    try {
+      setShowPoster(false);
+      await videoRef.current?.playAsync();
+    } catch {}
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[typography.title, styles.screenTitle]}>Carica video</Text>
+      <View style={styles.header}>
+        <Text style={[typography.title, styles.headerTitle]}>Carica un video</Text>
+        <View style={styles.headerActions} />
+      </View>
 
-        <Pressable style={styles.selectBtn} onPress={pickVideo}>
-          <Ionicons name="folder-open-outline" size={20} color={colors.white} />
-          <Text style={styles.selectBtnText}>Seleziona un video dalla galleria</Text>
-        </Pressable>
-
-        {videoUri && (
-          <View style={styles.preview}>
-            <Video
-              source={{ uri: videoUri }}
-              style={styles.previewVideo}
-              useNativeControls
-              resizeMode={ResizeMode.CONTAIN}
-              isLooping
-            />
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionHeaderLeft}>
+              <View style={styles.sectionIconWrap}>
+                <Ionicons name="film-outline" size={16} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.sectionTitle}>Video</Text>
+            </View>
+            <Pressable onPress={pickVideo} style={styles.linkBtn}>
+              <Ionicons name="repeat-outline" size={14} color={colors.primaryDark} />
+              <Text style={styles.linkBtnText}>{videoUri ? 'Sostituisci' : 'Seleziona'}</Text>
+            </Pressable>
           </View>
-        )}
 
-        <Text style={styles.label}>Titolo</Text>
-        <TextInput
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Titolo del video"
-          placeholderTextColor={colors.muted}
-          style={styles.input}
-        />
-
-        <Text style={styles.label}>Descrizione</Text>
-        <TextInput
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Descrizione (facoltativa)"
-          placeholderTextColor={colors.muted}
-          style={[styles.input, { height: 100 }]}
-          multiline
-        />
-
-        {/* Gruppi + pulsante + */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={styles.label}>Gruppi</Text>
-          <Pressable
-            onPress={() => setGroupModal(true)}
-            style={{ padding: 6, borderRadius: 999, backgroundColor: colors.primaryLight }}
-          >
-            <Ionicons name="add" size={18} color={colors.primaryDark} />
-          </Pressable>
+          {videoUri ? (
+            <View style={styles.previewCard}>
+              <Video
+                ref={videoRef}
+                source={{ uri: videoUri }}
+                style={styles.previewVideo}
+                useNativeControls
+                resizeMode={ResizeMode.COVER}
+                shouldPlay={false}
+                isLooping={false}
+                posterSource={posterUri ? { uri: posterUri } : undefined}
+                usePoster={!!posterUri && showPoster}
+                onPlaybackStatusUpdate={(status) => {
+                  if ('durationMillis' in status && status.durationMillis && !videoDuration) {
+                    setVideoDuration(formatDuration(status.durationMillis));
+                  }
+                  if ('didJustFinish' in status && status.didJustFinish) {
+                    setShowPoster(true);
+                    videoRef.current?.stopAsync();
+                  }
+                  if ('isPlaying' in status && status.isPlaying && showPoster) {
+                    setShowPoster(false);
+                  }
+                }}
+              />
+              {showPoster ? (
+                <>
+                  <Pressable style={styles.previewOverlay} onPress={handlePlay}>
+                    <View style={styles.playButton}>
+                      <Ionicons name="play" size={28} color={colors.white} />
+                    </View>
+                  </Pressable>
+                  {videoDuration ? (
+                    <View style={styles.durationBadge}>
+                      <Text style={styles.durationText}>{videoDuration}</Text>
+                    </View>
+                  ) : null}
+                </>
+              ) : null}
+            </View>
+          ) : (
+            <Pressable style={styles.emptyPicker} onPress={pickVideo}>
+              <View style={styles.emptyPickerIcon}>
+                <Ionicons name="cloud-upload-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={styles.emptyPickerTitle}>Aggiungi un video</Text>
+                <Text style={styles.emptyPickerSub}>Scegli dalla galleria del dispositivo</Text>
+              </View>
+            </Pressable>
+          )}
         </View>
-        <DropdownMulti groups={groups} selected={selectedGroups} onChange={setSelectedGroups} />
 
-        <Text style={styles.label}>Album</Text>
-        <View style={styles.albumControl}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-            {albumOptions.map(opt => {
-              const sel = selectedAlbumId === opt.id;
-              return (
-                <Pressable
-                  key={opt.id}
-                  onPress={() => {
-                    if (opt.id === 'create') {
-                      setAlbumModal(true);
-                      return;
-                    }
-                    // NEW: guard rail su selezione album
-                    if (opt.id !== 'none') {
-                      const album = albums.find(a => a.id === opt.id);
-                      if (album && !canUserUploadToAlbum(currentUser, album)) {
-                        Alert.alert('Accesso negato', 'Non puoi caricare video in questo album.');
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionHeaderLeft}>
+              <View style={styles.sectionIconWrap}>
+                <Ionicons name="create-outline" size={16} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.sectionTitle}>Dettagli</Text>
+            </View>
+          </View>
+
+          <Text style={styles.label}>Titolo</Text>
+          <TextInput
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Titolo del video"
+            placeholderTextColor={colors.muted}
+            style={styles.input}
+          />
+
+          <Text style={styles.label}>Descrizione</Text>
+          <TextInput
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Descrizione (facoltativa)"
+            placeholderTextColor={colors.muted}
+            style={[styles.input, styles.textarea]}
+            multiline
+          />
+        </View>
+
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionHeaderLeft}>
+              <View style={styles.sectionIconWrap}>
+                <Ionicons name="people-outline" size={16} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.sectionTitle}>Gruppi</Text>
+            </View>
+            <Pressable onPress={() => setGroupModal(true)} style={styles.circleAddBtn}>
+              <Ionicons name="add" size={18} color={colors.primaryDark} />
+            </Pressable>
+          </View>
+
+          <DropdownMulti groups={groups} selected={selectedGroups} onChange={setSelectedGroups} />
+        </View>
+
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionHeaderLeft}>
+              <View style={styles.sectionIconWrap}>
+                <Ionicons name="images-outline" size={16} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.sectionTitle}>Album</Text>
+            </View>
+            <Text style={styles.sectionHint}>Scegli dove organizzare il tuo video</Text>
+          </View>
+
+          <View style={styles.albumControl}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {albumOptions.map(opt => {
+                const sel = selectedAlbumId === opt.id;
+                return (
+                  <Pressable
+                    key={opt.id}
+                    onPress={() => {
+                      if (opt.id === 'create') {
+                        setAlbumModal(true);
                         return;
                       }
-                    }
-                    setSelectedAlbumId(opt.id as any);
-                  }}
-                  style={[styles.albumChip, sel && styles.albumChipSelected]}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text
-                      style={[styles.albumChipText, sel && styles.albumChipTextSel]}
-                      numberOfLines={1}
-                    >
-                      {opt.title}
-                    </Text>
-                    {/* NEW: badge "Condiviso" sugli album con contributors */}
-                    {opt.isShared && (
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 10,
-                          backgroundColor: '#eef2ff',
-                        }}
-                      >
-                        Condiviso
+                      if (opt.id !== 'none') {
+                        const album = albums.find(a => a.id === opt.id);
+                        if (album && !canUserUploadToAlbum(currentUser, album)) {
+                          Alert.alert('Accesso negato', 'Non puoi caricare video in questo album.');
+                          return;
+                        }
+                      }
+                      setSelectedAlbumId(opt.id as any);
+                    }}
+                    style={[styles.albumChip, sel && styles.albumChipSelected]}
+                  >
+                    <View style={styles.albumChipInner}>
+                      <Text style={[styles.albumChipText, sel && styles.albumChipTextSel]} numberOfLines={1}>
+                        {opt.title}
                       </Text>
-                    )}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+                      {opt.isShared ? <Text style={styles.sharedBadge}>Condiviso</Text> : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
         </View>
 
-        <Pressable style={styles.uploadBtn} onPress={onUpload}>
-          <Ionicons name="cloud-upload" size={20} color={colors.white} />
-          <Text style={styles.uploadBtnText}>Carica video</Text>
-        </Pressable>
+        <View style={{ height: 100 }} />
       </ScrollView>
+
+      <View style={styles.bottomBar}>
+        <Pressable
+          onPress={onUpload}
+          disabled={!canUpload}
+          style={[styles.primaryBtn, !canUpload && styles.primaryBtnDisabled]}
+        >
+          <Ionicons name="cloud-upload" size={18} color={colors.white} />
+          <Text style={styles.primaryBtnText}>Carica video</Text>
+        </Pressable>
+      </View>
 
       <AlbumCreateModal
         visible={albumModal}
         onClose={() => setAlbumModal(false)}
-        onCreate={onCreateAlbum} // CHANGED: accetta contributors
+        onCreate={onCreateAlbum}
       />
       <GroupCreateModal
         visible={groupModal}
