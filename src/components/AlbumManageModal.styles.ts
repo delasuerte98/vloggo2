@@ -53,4 +53,34 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   closeText: { color: '#fff', fontWeight: '700' },
+sharedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
+sharedLabel: { fontSize: 16, fontWeight: '600' },
+contributorsBox: { marginTop: 12 },
+sectionTitle: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
+chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: '#ccc' },
+chipSelected: { backgroundColor: '#e8f0ff', borderColor: '#6a9cff' },
+chipText: { fontSize: 14 },
+chipTextSelected: { fontWeight: '700' },
+btnDisabled: { opacity: 0.5 },
+// NEW
+ownerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+ownerBadge: { borderRadius: 12, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: '#eef2ff' },
+ownerBadgeText: { fontSize: 12, fontWeight: '700' },
+
+sectionTitle: { fontSize: 14, fontWeight: '700', marginTop: 8, marginBottom: 6 },
+smallLabel: { fontSize: 12, opacity: 0.8, marginBottom: 6 },
+
+chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: '#ccc' },
+chipSelected: { backgroundColor: '#e8f0ff', borderColor: '#6a9cff' },
+chipText: { fontSize: 14 },
+chipTextSelected: { fontWeight: '700' },
+
+btnPrimary: { paddingVertical: 12, alignItems: 'center', borderRadius: 12, backgroundColor: '#1f6feb', marginTop: 8 },
+btnPrimaryText: { color: '#fff', fontWeight: '700' },
+btnSecondary: { paddingVertical: 12, alignItems: 'center', borderRadius: 12, backgroundColor: '#f1f3f5', marginTop: 8 },
+btnSecondaryText: { fontWeight: '700' },
+btnDisabled: { opacity: 0.5 },
+
 });

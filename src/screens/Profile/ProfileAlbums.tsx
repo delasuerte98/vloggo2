@@ -1,3 +1,6 @@
+// src/screens/Profile/ProfileAlbums.tsx
+// CHANGED: badge "Condiviso" nelle card + create album che usa DataContext.createAlbum (supporta contributors)
+
 import React, { useContext, useMemo, useRef, useState } from "react";
 import {
   View,
@@ -27,8 +30,15 @@ import AlbumManageModal from "../../components/AlbumManageModal";
 type Nav = NativeStackNavigationProp<any>;
 
 export default function ProfileAlbums() {
-  const { albums, profile, friends, groups, updateProfile, addFriend } =
-    useContext(DataContext);
+  const {
+    albums,
+    profile,
+    friends,
+    groups,
+    updateProfile,
+    addFriend,
+    createAlbum, // NEW
+  } = useContext(DataContext);
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
 
@@ -62,10 +72,9 @@ export default function ProfileAlbums() {
   return (
     <SafeAreaView
       style={styles.container}
-      // Garantiamo padding per top/bottom notch/home indicator
       edges={["top", "bottom"]}
     >
-      {/* Mini header box centrato - ora sempre sotto lo status bar */}
+      {/* Mini header box centrato */}
       <Animated.View
         pointerEvents="none"
         style={[
@@ -87,9 +96,9 @@ export default function ProfileAlbums() {
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingBottom: (styles?.scrollContent?.paddingBottom || 0) + // se definito nello style
+            paddingBottom:
+              (styles?.scrollContent?.paddingBottom || 0) +
               Math.max(insets.bottom, 12),
-            // un minimo di spazio sopra perché la card non “tocchi” lo status bar
             paddingTop: Math.max(insets.top, 8),
           },
         ]}
@@ -224,7 +233,7 @@ export default function ProfileAlbums() {
                   />
                 </Pressable>
 
-                {/* (Opzionale) Crea album rapido */}
+                {/* Crea album */}
                 <Pressable
                   onPress={() => setCreateVisible(true)}
                   style={[styles.shareBtn, { marginLeft: 8 }]}
@@ -295,12 +304,33 @@ export default function ProfileAlbums() {
                     />
                   )}
                 </View>
-                <Text style={styles.albumTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.albumCount}>
-                  {item.count ?? 0} video
-                </Text>
+
+                <View style={{ width: "100%", marginTop: 6 }}>
+                  <View
+                    style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+                  >
+                    <Text style={styles.albumTitle} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    {/* NEW: etichetta "Condiviso" se ha contributors */}
+                    {!!(item.contributors?.length) && (
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 10,
+                          backgroundColor: "#eef2ff",
+                        }}
+                      >
+                        Condiviso
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.albumCount}>
+                    {item.count ?? 0} video
+                  </Text>
+                </View>
               </Pressable>
             ))}
           </View>
@@ -323,11 +353,12 @@ export default function ProfileAlbums() {
         }}
       />
 
+      {/* CHANGED: AlbumCreateModal ora passa contributors a createAlbum */}
       <AlbumCreateModal
         visible={createVisible}
         onClose={() => setCreateVisible(false)}
-        onCreate={() => {
-          // Implementa la logica reale di creazione album dove preferisci
+        onCreate={(data) => {
+          createAlbum(data); // ownerId=currentUser e contributors gestiti nel context
           setCreateVisible(false);
         }}
       />
