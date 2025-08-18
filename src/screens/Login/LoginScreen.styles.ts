@@ -27,7 +27,6 @@ export const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     fontSize: 16,
     color: colors.text,
-    // ombra morbida
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -35,12 +34,9 @@ export const styles = StyleSheet.create({
     elevation: 2,
   },
   button: {
-    backgroundColor: colors.primary,
     paddingVertical: spacing.md,
     borderRadius: 999,
-    marginTop: spacing.xl,
     alignItems: 'center',
-    // ombra morbida
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -51,5 +47,20 @@ export const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '700',
     fontSize: 16,
+  },
+  /** Footer link */
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: spacing.lg,
+  },
+  footerText: {
+    color: colors.muted,
+    fontSize: 14,
+  },
+  footerLink: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

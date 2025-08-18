@@ -1,10 +1,10 @@
-// src/screens/Upload/UploadScreen.tsx
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, Alert, TextInput, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { styles } from './UploadScreen.styles';
 import { typography } from '../../theme/typography';
 import { colors } from '../../theme/colors';
@@ -167,26 +167,19 @@ export default function UploadScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={[typography.title, styles.headerTitle]}>Carica un video</Text>
+        <View>
+          <Text style={[typography.title, styles.headerTitle]}>Carica un video</Text>
+          <Text style={styles.headerSub}>Condividi momenti con i tuoi amici</Text>
+        </View>
         <View style={styles.headerActions} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionHeaderLeft}>
-              <View style={styles.sectionIconWrap}>
-                <Ionicons name="film-outline" size={16} color={colors.primaryDark} />
-              </View>
-              <Text style={styles.sectionTitle}>Video</Text>
-            </View>
-            <Pressable onPress={pickVideo} style={styles.linkBtn}>
-              <Ionicons name="repeat-outline" size={14} color={colors.primaryDark} />
-              <Text style={styles.linkBtnText}>{videoUri ? 'Sostituisci' : 'Seleziona'}</Text>
-            </Pressable>
-          </View>
-
+        {/* CARD UNIFICATA: Video + Dettagli */}
+        <View style={styles.unifiedCard}>
+          {/* Blocco media */}
           {videoUri ? (
             <View style={styles.previewCard}>
               <Video
@@ -212,64 +205,62 @@ export default function UploadScreen() {
                   }
                 }}
               />
+              {/* Overlay & durata */}
               {showPoster ? (
-                <>
-                  <Pressable style={styles.previewOverlay} onPress={handlePlay}>
-                    <View style={styles.playButton}>
-                      <Ionicons name="play" size={28} color={colors.white} />
-                    </View>
-                  </Pressable>
-                  {videoDuration ? (
-                    <View style={styles.durationBadge}>
-                      <Text style={styles.durationText}>{videoDuration}</Text>
-                    </View>
-                  ) : null}
-                </>
+                <Pressable style={styles.previewOverlay} onPress={handlePlay} hitSlop={8}>
+                  <View style={styles.playButton}>
+                    <Ionicons name="play" size={28} color={colors.white} />
+                  </View>
+                </Pressable>
+              ) : null}
+              {videoDuration ? (
+                <View style={styles.durationBadge}>
+                  <Text style={styles.durationText}>{videoDuration}</Text>
+                </View>
               ) : null}
             </View>
           ) : (
-            <Pressable style={styles.emptyPicker} onPress={pickVideo}>
-              <View style={styles.emptyPickerIcon}>
-                <Ionicons name="cloud-upload-outline" size={22} color={colors.primaryDark} />
-              </View>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={styles.emptyPickerTitle}>Aggiungi un video</Text>
-                <Text style={styles.emptyPickerSub}>Scegli dalla galleria del dispositivo</Text>
-              </View>
+            <Pressable style={styles.emptyPickerV2} onPress={pickVideo} hitSlop={8}>
+              <LinearGradient
+                colors={['#4DA9E9', '#007AFF']}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={styles.emptyPickerIconV2}
+              >
+                <Ionicons name="cloud-upload-outline" size={22} color={colors.white} />
+              </LinearGradient>
+              <Text style={styles.emptyPickerTitle}>Aggiungi un video</Text>
+              <Text style={styles.emptyPickerSub}>Seleziona dalla tua galleria</Text>
             </Pressable>
           )}
-        </View>
 
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionHeaderLeft}>
-              <View style={styles.sectionIconWrap}>
-                <Ionicons name="create-outline" size={16} color={colors.primaryDark} />
-              </View>
-              <Text style={styles.sectionTitle}>Dettagli</Text>
-            </View>
+          {/* Blocco dettagli */}
+          <View style={{ gap: 8 }}>
+            <Text style={styles.labelStrong}>Titolo</Text>
+            <TextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Titolo del video"
+              placeholderTextColor={colors.muted}
+              style={styles.input}
+              autoCapitalize="sentences"
+              returnKeyType="next"
+            />
+
+            <Text style={styles.labelStrong}>Descrizione</Text>
+            <TextInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Descrizione (facoltativa)"
+              placeholderTextColor={colors.muted}
+              style={[styles.input, styles.textarea]}
+              multiline
+              textAlignVertical="top"
+            />
           </View>
-
-          <Text style={styles.label}>Titolo</Text>
-          <TextInput
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Titolo del video"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-          />
-
-          <Text style={styles.label}>Descrizione</Text>
-          <TextInput
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Descrizione (facoltativa)"
-            placeholderTextColor={colors.muted}
-            style={[styles.input, styles.textarea]}
-            multiline
-          />
         </View>
 
+        {/* GRUPPI */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionHeaderLeft}>
@@ -278,7 +269,7 @@ export default function UploadScreen() {
               </View>
               <Text style={styles.sectionTitle}>Gruppi</Text>
             </View>
-            <Pressable onPress={() => setGroupModal(true)} style={styles.circleAddBtn}>
+            <Pressable onPress={() => setGroupModal(true)} style={styles.circleAddBtn} hitSlop={8}>
               <Ionicons name="add" size={18} color={colors.primaryDark} />
             </Pressable>
           </View>
@@ -286,6 +277,7 @@ export default function UploadScreen() {
           <DropdownMulti groups={groups} selected={selectedGroups} onChange={setSelectedGroups} />
         </View>
 
+        {/* ALBUM */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionHeaderLeft}>
@@ -294,7 +286,7 @@ export default function UploadScreen() {
               </View>
               <Text style={styles.sectionTitle}>Album</Text>
             </View>
-            <Text style={styles.sectionHint}>Scegli dove organizzare il tuo video</Text>
+            <Text style={styles.sectionHint}>Organizza al meglio i tuoi video</Text>
           </View>
 
           <View style={styles.albumControl}>
@@ -318,14 +310,14 @@ export default function UploadScreen() {
                       }
                       setSelectedAlbumId(opt.id as any);
                     }}
-                    style={[styles.albumChip, sel && styles.albumChipSelected]}
+                    style={[styles.albumChipV2, sel && styles.albumChipV2Sel]}
+                    hitSlop={6}
                   >
-                    <View style={styles.albumChipInner}>
-                      <Text style={[styles.albumChipText, sel && styles.albumChipTextSel]} numberOfLines={1}>
-                        {opt.title}
-                      </Text>
-                      {opt.isShared ? <Text style={styles.sharedBadge}>Condiviso</Text> : null}
-                    </View>
+                    <Text style={[styles.albumChipText, sel && styles.albumChipTextSel]} numberOfLines={1}>
+                      {opt.title}
+                    </Text>
+                    {sel ? <Ionicons name="checkmark-circle" size={14} color={colors.primaryDark} /> : null}
+                    {opt.isShared ? <Text style={styles.sharedBadge}>Condiviso</Text> : null}
                   </Pressable>
                 );
               })}
@@ -336,28 +328,23 @@ export default function UploadScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
+      {/* Bottom CTA bar (gradient) */}
       <View style={styles.bottomBar}>
-        <Pressable
-          onPress={onUpload}
-          disabled={!canUpload}
-          style={[styles.primaryBtn, !canUpload && styles.primaryBtnDisabled]}
-        >
-          <Ionicons name="cloud-upload" size={18} color={colors.white} />
-          <Text style={styles.primaryBtnText}>Carica video</Text>
+        <Pressable onPress={onUpload} disabled={!canUpload} style={{ borderRadius: 16 }} hitSlop={6}>
+          <LinearGradient
+            colors={['#4DA9E9', '#007AFF']}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={[styles.primaryBtn, !canUpload && styles.primaryBtnDisabled]}
+          >
+            <Ionicons name="cloud-upload" size={18} color={colors.white} />
+            <Text style={styles.primaryBtnText}>Carica video</Text>
+          </LinearGradient>
         </Pressable>
       </View>
 
-      <AlbumCreateModal
-        visible={albumModal}
-        onClose={() => setAlbumModal(false)}
-        onCreate={onCreateAlbum}
-      />
-      <GroupCreateModal
-        visible={groupModal}
-        friends={friends}
-        onClose={() => setGroupModal(false)}
-        onCreate={onCreateGroup}
-      />
+      <AlbumCreateModal visible={albumModal} onClose={() => setAlbumModal(false)} onCreate={onCreateAlbum} />
+      <GroupCreateModal visible={groupModal} friends={friends} onClose={() => setGroupModal(false)} onCreate={onCreateGroup} />
     </SafeAreaView>
   );
 }

@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import TabNavigator from './TabNavigator';
 import LoginScreen from '../screens/Login/LoginScreen';
 import AlbumDetail from '../screens/Profile/AlbumDetail';
+import RegisterScreen from '../screens/Register/RegisterScreen';
 
 // Nuova schermata
 import GroupManageScreen from '../screens/Groups/GroupManageScreen';
@@ -11,6 +12,7 @@ import GroupManageScreen from '../screens/Groups/GroupManageScreen';
 export type RootStackParamList = {
   Login: undefined;
   Main: undefined;
+  Register: undefined;
   AlbumDetail: { albumId: string };
   GroupManage: undefined;
 };
@@ -22,6 +24,8 @@ export default function StackNavigator() {
     <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShadowVisible: false }}>
       <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
+      <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }}
+/>
 
       <Stack.Screen
         name="AlbumDetail"
