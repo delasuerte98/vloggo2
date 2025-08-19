@@ -11,7 +11,7 @@ import { colors } from '../../theme/colors';
 import { DataContext } from '../../../App';
 import DropdownMulti from '../../components/DropdownMulti';
 import AlbumCreateModal from '../../components/AlbumCreateModal';
-import GroupCreateModal from '../../components/GroupCreateModal';
+import GroupCreateSheet from '../Groups/components/GroupCreateSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type AlbumOption = { id: string; title: string; isShared?: boolean };
@@ -36,7 +36,7 @@ export default function UploadScreen() {
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | 'none' | 'create'>('none');
   const [albumModal, setAlbumModal] = useState(false);
-  const [groupModal, setGroupModal] = useState(false);
+  const [groupSheet, setGroupSheet] = useState(false); // ✅ nuovo stato
 
   const videoRef = useRef<Video>(null);
   const [posterUri, setPosterUri] = useState<string | undefined>(undefined);
@@ -152,9 +152,10 @@ export default function UploadScreen() {
     setSelectedAlbumId(newAlbum.id);
   };
 
+  // ✅ nuova creazione gruppo (con lo stesso flow di GroupManageScreen)
   const onCreateGroup = (data: { name: string; image?: string; memberUsernames: string[] }) => {
     const g = createGroup(data);
-    setGroupModal(false);
+    setGroupSheet(false);
     setSelectedGroups(prev => [...prev, g.id]);
   };
 
@@ -269,7 +270,7 @@ export default function UploadScreen() {
               </View>
               <Text style={styles.sectionTitle}>Gruppi</Text>
             </View>
-            <Pressable onPress={() => setGroupModal(true)} style={styles.circleAddBtn} hitSlop={8}>
+            <Pressable onPress={() => setGroupSheet(true)} style={styles.circleAddBtn} hitSlop={8}>
               <Ionicons name="add" size={18} color={colors.primaryDark} />
             </Pressable>
           </View>
@@ -343,8 +344,18 @@ export default function UploadScreen() {
         </Pressable>
       </View>
 
-      <AlbumCreateModal visible={albumModal} onClose={() => setAlbumModal(false)} onCreate={onCreateAlbum} />
-      <GroupCreateModal visible={groupModal} friends={friends} onClose={() => setGroupModal(false)} onCreate={onCreateGroup} />
+      {/* Modali */}
+      <AlbumCreateModal
+        visible={albumModal}
+        onClose={() => setAlbumModal(false)}
+        onCreate={onCreateAlbum}
+      />
+      <GroupCreateSheet
+        visible={groupSheet}
+        friends={friends}
+        onClose={() => setGroupSheet(false)}
+        onCreate={onCreateGroup}
+      />
     </SafeAreaView>
   );
 }

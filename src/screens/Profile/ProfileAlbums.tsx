@@ -17,14 +17,10 @@ import { colors } from "../../theme/colors";
 import { DataContext, Album } from "../../../App";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets,} from "react-native-safe-area-context";
 import AlbumCreateModal from "../../components/AlbumCreateModal";
 import ProfileEditModal from "../../components/ProfileEditModal";
 import FriendsModal from "../../components/FriendsModal";
-import GroupManageModal from "../../components/GroupManageModal";
 import AlbumManageModal from "../../components/AlbumManageModal";
 
 type Nav = NativeStackNavigationProp<any>;
@@ -45,7 +41,6 @@ export default function ProfileAlbums() {
   const [editVisible, setEditVisible] = useState(false);
   const [createVisible, setCreateVisible] = useState(false);
   const [friendsVisible, setFriendsVisible] = useState(false);
-  const [groupManageVisible, setGroupManageVisible] = useState(false);
   const [albumManageVisible, setAlbumManageVisible] = useState(false);
 
   const totalVideos = useMemo(
@@ -128,16 +123,16 @@ export default function ProfileAlbums() {
                 />
               </Pressable>
 
-              {/* Gestione gruppi */}
-              <Pressable
-                onPress={() => setGroupManageVisible(true)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={{ marginLeft: 12 }}
-                accessibilityRole="button"
-                accessibilityLabel="Gestisci gruppi"
-              >
-                <Ionicons name="people-outline" size={24} color={colors.text} />
-              </Pressable>
+             {/* Gestione gruppi */}
+<Pressable
+  onPress={() => navigation.navigate('GroupManage' as never)}
+  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+  style={{ marginLeft: 12 }}
+  accessibilityRole="button"
+  accessibilityLabel="Gestisci gruppi"
+>
+  <Ionicons name="people-outline" size={24} color={colors.text} />
+</Pressable>
 
               {/* Modifica profilo */}
               <Pressable
@@ -370,11 +365,6 @@ export default function ProfileAlbums() {
           addFriend(f);
           setFriendsVisible(false);
         }}
-      />
-
-      <GroupManageModal
-        visible={groupManageVisible}
-        onClose={() => setGroupManageVisible(false)}
       />
 
       <AlbumManageModal

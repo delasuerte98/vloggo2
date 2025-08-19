@@ -8,46 +8,32 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 
+  /** HEADER */
   header: {
+    position: 'relative',
+    paddingTop: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    justifyContent: 'space-between',
   },
-  backBtn: {
-    width: 32,
-    height: 32,
+  headerSide: {
+    minWidth: 90,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 16,
+    gap: spacing.xs,
   },
-  title: {
-    flex: 1,
+  headerTitle: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     textAlign: 'center',
     color: colors.text,
   },
 
-  listContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-    gap: spacing.md,
-  },
-  groupRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  groupName: { color: colors.text, fontWeight: '700' },
-  membersCount: { color: colors.muted, marginTop: 2 },
-
-  editBtn: {
+  newBtn: {
+    alignSelf: 'flex-end',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -56,8 +42,79 @@ export const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 14,
   },
-  editBtnText: { color: colors.white, fontWeight: '700' },
+  newBtnText: { color: colors.white, fontWeight: '700' },
 
+  /** LIST */
+  list: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
+  },
+
+  /** CARD COVER STYLE */
+  card: {
+    height: 140,
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  cover: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  coverImg: {
+    ...StyleSheet.absoluteFillObject,
+    resizeMode: 'cover',
+    borderRadius: 18,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+  },
+  groupName: {
+    color: colors.white,
+    fontSize: 18,
+    fontWeight: '800',
+    maxWidth: '70%',
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  badgeText: {
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+
+  /** Menu overlay */
+  menu: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: '#00000055',
+    borderRadius: 16,
+    padding: 6,
+  },
+
+  /** Empty */
   emptyBox: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -66,91 +123,47 @@ export const styles = StyleSheet.create({
   },
   emptyText: { color: colors.muted },
 
-  modalSafe: {
+  /** Bottom sheet */
+  sheetBackdrop: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#00000055',
+    justifyContent: 'flex-end',
   },
-  modalHeader: {
+  sheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
     gap: spacing.sm,
   },
-  modalClose: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+  sheetHandle: {
+    width: 44,
+    height: 4,
+    backgroundColor: colors.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: spacing.sm,
   },
-  modalTitle: {
-    flex: 1,
+  sheetTitle: {
     textAlign: 'center',
     color: colors.text,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
   },
-  saveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: 14,
-  },
-  saveBtnText: { color: colors.white, fontWeight: '700' },
-
-  quickActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.surface,
-    borderRadius: 999,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipText: { color: colors.text },
-
-  searchBox: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+  sheetRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
     paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
-  searchInput: {
-    flex: 1,
+  sheetRowText: {
     color: colors.text,
+    fontWeight: '600',
   },
-
-  friendsContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-    gap: spacing.xs,
-  },
-  friendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  avatar: { width: 32, height: 32, borderRadius: 16 },
-  friendName: { color: colors.text, fontWeight: '600' },
-  friendUsername: { color: colors.muted, marginTop: 2 },
+  sheetRowDanger: {},
+  sheetRowDangerText: { color: '#ef4444', fontWeight: '700' },
+  sheetCancel: { alignItems: 'center', paddingVertical: 10, marginTop: spacing.sm },
+  sheetCancelText: { color: colors.muted, fontWeight: '600' },
 });

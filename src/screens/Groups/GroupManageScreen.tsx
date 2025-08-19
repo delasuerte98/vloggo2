@@ -1,6 +1,17 @@
-import React, { useContext, useMemo, useState } from 'react';
-import { View, Text, FlatList, Pressable, Modal, TextInput, Image, Platform } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useContext, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  Pressable,
+  Image,
+  Modal,
+  Alert,
+  Animated,
+} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { DataContext, Friend, Group } from '../../../App';
@@ -8,167 +19,180 @@ import { styles } from './GroupManageScreen.styles';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 
+import GroupEditorSheet from './components/GroupEditorSheet';
+import GroupCreateSheet from './components/GroupCreateSheet';
+
+const MAX_GROUP_MEMBERS = 50;
+
 export default function GroupManageScreen() {
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { groups, friends, updateGroup } = useContext(DataContext);
+  const { groups, friends, updateGroup, deleteGroup, createGroup } = useContext(DataContext);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-  const [query, setQuery] = useState('');
-  const [draftMembers, setDraftMembers] = useState<string[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
 
-  const openEditor = (g: Group) => {
-    setSelectedGroup(g);
-    setDraftMembers(g.members.slice());
-    setQuery('');
-    setEditorOpen(true);
+  // Bottom sheet azioni
+  const [actionGroup, setActionGroup] = useState<Group | null>(null);
+  const [actionOpen, setActionOpen] = useState(false);
+
+  const openEditor = useCallback((g: Group) => { setSelectedGroup(g); setEditorOpen(true); }, []);
+  const closeEditor = useCallback(() => { setEditorOpen(false); setSelectedGroup(null); }, []);
+
+  const openActions = useCallback((g: Group) => { setActionGroup(g); setActionOpen(true); }, []);
+  const closeActions = useCallback(() => { setActionOpen(false); setActionGroup(null); }, []);
+
+  const changePhoto = useCallback(async (g: Group) => {
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: false,
+        quality: 0.9,
+      });
+      if (!res.canceled && res.assets?.length) {
+        // TODO(api): upload e salva URL definitivo
+        updateGroup(g.id, { image: res.assets[0].uri });
+      }
+    } catch {
+      Alert.alert('Errore', "Impossibile selezionare l'immagine.");
+    }
+  }, [updateGroup]);
+
+  const removeGroup = useCallback((g: Group) => {
+    Alert.alert('Elimina gruppo', `Vuoi eliminare “${g.name}”?`, [
+      { text: 'Annulla', style: 'cancel' },
+      { text: 'Elimina', style: 'destructive', onPress: () => deleteGroup(g.id) },
+    ]);
+  }, [deleteGroup]);
+
+  const onCreateGroup = useCallback(() => setCreateOpen(true), []);
+
+  const renderGroupCard = ({ item }: { item: Group }) => {
+    const scale = new Animated.Value(1);
+    const onPressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start();
+    const onPressOut = () => Animated.spring(scale, { toValue: 1, friction: 4, tension: 40, useNativeDriver: true }).start();
+
+    return (
+      <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+        {/* Cover */}
+        <Pressable
+          style={styles.cover}
+          onPress={() => openEditor(item)}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+        >
+          {item.image ? (
+            <Image source={{ uri: item.image }} style={styles.coverImg} />
+          ) : (
+            <LinearGradient
+              colors={['#4DA9E9', '#007AFF']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.coverImg}
+            />
+          )}
+          {/* overlay per leggere bene i testi */}
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.65)']}
+            style={styles.overlay}
+          />
+
+          {/* Titolo + badge */}
+          <View style={styles.bottomRow}>
+            <Text style={styles.groupName} numberOfLines={1}>{item.name}</Text>
+            <View style={styles.badge}>
+              <Ionicons name="person" size={12} color={colors.white} />
+              <Text style={styles.badgeText}>{item.members?.length ?? 0}</Text>
+            </View>
+          </View>
+        </Pressable>
+
+        {/* Menu overlay */}
+        <Pressable style={styles.menu} hitSlop={8} onPress={() => openActions(item)}>
+          <Ionicons name="ellipsis-horizontal" size={18} color={colors.white} />
+        </Pressable>
+      </Animated.View>
+    );
   };
-
-  const closeEditor = () => {
-    setEditorOpen(false);
-    setSelectedGroup(null);
-    setDraftMembers([]);
-    setQuery('');
-  };
-
-  const toggleMember = (username: string) => {
-    setDraftMembers(prev => (prev.includes(username) ? prev.filter(u => u !== username) : [...prev, username]));
-  };
-
-  const selectAll = () => setDraftMembers(Array.from(new Set(friends.map(f => f.username))));
-  const clearAll = () => setDraftMembers([]);
-
-  const save = () => {
-    if (!selectedGroup) return;
-    updateGroup(selectedGroup.id, { members: draftMembers });
-    closeEditor();
-  };
-
-  const filteredFriends: Friend[] = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return friends;
-    return friends.filter(f => f.username.toLowerCase().includes(q) || f.fullName.toLowerCase().includes(q));
-  }, [friends, query]);
-
-  const headerPaddingTop = Math.max(insets.top, 12);
 
   return (
-    <SafeAreaView style={[styles.safe, { paddingTop: headerPaddingTop }]}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={[typography.title, styles.title]}>Gestione gruppi</Text>
-        <View style={{ width: 24 }} />
-      </View>
+  <View style={styles.headerSide}>
+    <Pressable onPress={() => (navigation as any).goBack()} hitSlop={12}>
+      <Ionicons name="chevron-back" size={24} color={colors.text} />
+    </Pressable>
+  </View>
 
-      {/* Lista gruppi */}
+  <Text style={styles.headerTitle}>Gruppi</Text>
+
+  <Pressable onPress={onCreateGroup} hitSlop={12} style={styles.newBtn}>
+    <Ionicons name="add" size={18} color={colors.white} />
+    <Text style={styles.newBtnText}>Nuovo</Text>
+  </Pressable>
+</View>
+
+      {/* Lista */}
       <FlatList
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={styles.list}
         data={groups}
         keyExtractor={(g) => g.id}
-        renderItem={({ item }) => (
-          <View style={styles.groupRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={[typography.subtitle, styles.groupName]}>{item.name}</Text>
-              <Text style={[typography.body, styles.membersCount]}>{item.members.length} membri</Text>
-            </View>
-            <Pressable style={styles.editBtn} onPress={() => openEditor(item)}>
-              <Ionicons name="people-outline" size={18} color={colors.white} />
-              <Text style={styles.editBtnText}>Modifica</Text>
-            </Pressable>
-          </View>
-        )}
+        renderItem={renderGroupCard}
         ListEmptyComponent={
           <View style={styles.emptyBox}>
             <Ionicons name="people-circle-outline" size={42} color={colors.muted} />
-            <Text style={styles.emptyText}>Nessun gruppo. Creane uno dalla schermata Gruppi.</Text>
+            <Text style={styles.emptyText}>Nessun gruppo. Crea il primo dal pulsante “Nuovo”.</Text>
           </View>
         }
       />
 
-      {/* Editor membri */}
-      <Modal
+      {/* Editor */}
+      <GroupEditorSheet
         visible={editorOpen}
-        animationType="slide"
-        presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}
-        onRequestClose={closeEditor}
-      >
-        <SafeAreaView style={styles.modalSafe}>
-          {/* Modal header */}
-          <View style={styles.modalHeader}>
-            <Pressable onPress={closeEditor} hitSlop={12} style={styles.modalClose}>
-              <Ionicons name="close" size={24} color={colors.text} />
+        group={selectedGroup}
+        maxMembers={MAX_GROUP_MEMBERS}
+        friends={friends as Friend[]}
+        onClose={closeEditor}
+        onSave={(id, payload) => updateGroup(id, payload)}
+      />
+
+      {/* Creazione */}
+      <GroupCreateSheet
+        visible={createOpen}
+        friends={friends as Friend[]}
+        maxMembers={MAX_GROUP_MEMBERS}
+        onClose={() => setCreateOpen(false)}
+        onCreate={(data) => { (createGroup as any)?.(data); setCreateOpen(false); }}
+      />
+
+      {/* Bottom sheet azioni */}
+      <Modal visible={actionOpen} transparent animationType="fade" onRequestClose={closeActions}>
+        <Pressable style={styles.sheetBackdrop} onPress={closeActions}>
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>{actionGroup?.name ?? 'Gruppo'}</Text>
+
+            <Pressable style={styles.sheetRow} onPress={() => { closeActions(); openEditor(actionGroup!); }}>
+              <Ionicons name="create-outline" size={18} color={colors.text} />
+              <Text style={styles.sheetRowText}>Modifica</Text>
             </Pressable>
-            <Text style={[typography.subtitle, styles.modalTitle]}>{selectedGroup?.name ?? 'Gruppo'}</Text>
-            <Pressable onPress={save} style={styles.saveBtn}>
-              <Ionicons name="checkmark" size={18} color={colors.white} />
-              <Text style={styles.saveBtnText}>Salva</Text>
+
+            <Pressable style={styles.sheetRow} onPress={() => { if (!actionGroup) return; closeActions(); changePhoto(actionGroup); }}>
+              <Ionicons name="image-outline" size={18} color={colors.text} />
+              <Text style={styles.sheetRowText}>Cambia foto</Text>
+            </Pressable>
+
+            <Pressable style={[styles.sheetRow, styles.sheetRowDanger]} onPress={() => { if (!actionGroup) return; closeActions(); removeGroup(actionGroup); }}>
+              <Ionicons name="trash-outline" size={18} color="#ef4444" />
+              <Text style={[styles.sheetRowText, styles.sheetRowDangerText]}>Elimina</Text>
+            </Pressable>
+
+            <Pressable style={styles.sheetCancel} onPress={closeActions}>
+              <Text style={styles.sheetCancelText}>Chiudi</Text>
             </Pressable>
           </View>
-
-          {/* Azioni rapide */}
-          <View style={styles.quickActions}>
-            <Pressable onPress={selectAll} style={styles.chip}>
-              <Ionicons name="checkbox" size={16} color={colors.text} />
-              <Text style={styles.chipText}>Seleziona tutti</Text>
-            </Pressable>
-            <Pressable onPress={clearAll} style={styles.chip}>
-              <Ionicons name="close-circle" size={16} color={colors.text} />
-              <Text style={styles.chipText}>Rimuovi tutti</Text>
-            </Pressable>
-          </View>
-
-          {/* Ricerca */}
-          <View style={styles.searchBox}>
-            <Ionicons name="search" size={18} color={colors.muted} />
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Cerca amici per nome o username"
-              placeholderTextColor={colors.muted}
-              style={styles.searchInput}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          {/* Lista amici */}
-          <FlatList
-            data={filteredFriends}
-            keyExtractor={(f) => f.id}
-            contentContainerStyle={styles.friendsContent}
-            renderItem={({ item }) => {
-              const isMember = draftMembers.includes(item.username);
-              return (
-                <Pressable style={styles.friendRow} onPress={() => toggleMember(item.username)}>
-                  {item.avatar ? (
-                    <Image source={{ uri: item.avatar }} style={styles.avatar} />
-                  ) : (
-                    <Ionicons name="person-circle-outline" size={32} color={colors.muted} />
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.friendName}>{item.fullName}</Text>
-                    <Text style={styles.friendUsername}>@{item.username}</Text>
-                  </View>
-                  <Ionicons
-                    name={isMember ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={22}
-                    color={isMember ? colors.primary : colors.muted}
-                  />
-                </Pressable>
-              );
-            }}
-            ListEmptyComponent={
-              <View style={styles.emptyBox}>
-                <Ionicons name="search" size={36} color={colors.muted} />
-                <Text style={styles.emptyText}>Nessun risultato</Text>
-              </View>
-            }
-          />
-        </SafeAreaView>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );

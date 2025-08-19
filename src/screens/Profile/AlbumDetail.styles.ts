@@ -49,4 +49,5 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginTop: spacing.lg,
   },
+  
 });
