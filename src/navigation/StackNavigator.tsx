@@ -7,6 +7,7 @@ import LoginScreen from '../screens/Login/LoginScreen';
 import RegisterScreen from '../screens/Register/RegisterScreen';
 import AlbumDetail from '../screens/Profile/AlbumDetail';
 
+
 // Nuova schermata
 import GroupManageScreen from '../screens/Groups/GroupManageScreen';
 
@@ -41,12 +42,14 @@ export default function StackNavigator() {
         options={{ headerShown: false }}
       />
 
-      <Stack.Screen
-        name="AlbumDetail"
-        component={AlbumDetail}
-        options={{ title: 'Dettagli Album' }}
-      />
-
+     <Stack.Screen
+  name="AlbumDetail"
+  component={AlbumDetail}
+  options={{
+    title: 'Dettagli Album',
+    headerShown: false, // 👈 nasconde l'header nativo
+  }}
+/>
       {/* Gestione gruppi: header interno -> headerShown false */}
       <Stack.Screen
         name="GroupManage"
@@ -56,3 +59,4 @@ export default function StackNavigator() {
     </Stack.Navigator>
   );
 }
+ 

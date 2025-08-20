@@ -14,6 +14,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
@@ -102,7 +103,6 @@ export default function GroupEditorSheet({
       members: draftMembers,
       image: imageUri,
     };
-    // TODO(api): validare uniqueness nome se richiesto dal backend
     onSave(group.id, payload);
     onClose();
   };
@@ -115,7 +115,6 @@ export default function GroupEditorSheet({
         quality: 0.9,
       });
       if (!res.canceled && res.assets?.length) {
-        // TODO(api): upload immagine su backend e salva URL definitivo
         setImageUri(res.assets[0].uri);
       }
     } catch {
@@ -131,7 +130,7 @@ export default function GroupEditorSheet({
       onRequestClose={onClose}
     >
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'bottom']}>
-        {/* Header compatto */}
+        {/* Header */}
         <View style={{
           paddingHorizontal: spacing.lg,
           paddingTop: spacing.sm,
@@ -148,25 +147,38 @@ export default function GroupEditorSheet({
             {group?.name ?? 'Gruppo'}
           </Text>
 
-          <Pressable onPress={save} hitSlop={12} style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            backgroundColor: isDirty && name.trim() ? colors.primary : colors.muted,
-            paddingHorizontal: spacing.md,
-            paddingVertical: 8,
-            borderRadius: 14,
-          }}>
-            <Ionicons name="checkmark" size={18} color={colors.white} />
-            <Text style={{ color: colors.white, fontWeight: '700' }}>Salva</Text>
-          </Pressable>
+          {/* Pulsante SALVA in gradient */}
+          <LinearGradient
+            colors={isDirty && name.trim() ? ['#007fff', '#00a5f2'] : [colors.muted, colors.muted]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              borderRadius: 14,
+              opacity: isDirty && name.trim() ? 1 : 0.6,
+            }}
+          >
+            <Pressable
+              onPress={save}
+              disabled={!isDirty || !name.trim()}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                paddingHorizontal: spacing.md,
+                paddingVertical: 8,
+              }}
+            >
+              <Ionicons name="checkmark" size={18} color={colors.white} />
+              <Text style={{ color: colors.white, fontWeight: '700' }}>Salva</Text>
+            </Pressable>
+          </LinearGradient>
         </View>
 
         {/* Contenuto */}
         <FlatList
           ListHeaderComponent={
             <>
-              {/* Avatar grande + Nome */}
+              {/* Avatar + Nome */}
               <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.md, alignItems: 'center' }}>
                 <Pressable onPress={pickImage} style={{
                   width: 104, height: 104, borderRadius: 52, backgroundColor: colors.surface,
@@ -250,7 +262,7 @@ export default function GroupEditorSheet({
                 <Text style={{ color: colors.muted }}>
                   Membri ({draftMembers.length}/{maxMembers})
                 </Text>
-                {limitMsg ? <Text style={{ color: colors.primary, fontWeight: '600' }}>{limitMsg}</Text> : null}
+                {limitMsg ? <Text style={{ color: '#00a5f2', fontWeight: '600' }}>{limitMsg}</Text> : null}
               </View>
             </>
           }
@@ -281,7 +293,7 @@ export default function GroupEditorSheet({
                 <Ionicons
                   name={isMember ? 'checkmark-circle' : 'ellipse-outline'}
                   size={24}
-                  color={isMember ? colors.primary : colors.muted}
+                  color={isMember ? '#00a5f2' : colors.muted}
                 />
               </Pressable>
             );

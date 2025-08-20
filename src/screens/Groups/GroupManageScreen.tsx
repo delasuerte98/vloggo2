@@ -10,7 +10,6 @@ import {
   Animated,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -21,6 +20,7 @@ import { typography } from '../../theme/typography';
 
 import GroupEditorSheet from './components/GroupEditorSheet';
 import GroupCreateSheet from './components/GroupCreateSheet';
+import ScreenContainer from '../../components/layout/ScreenContainer';
 
 const MAX_GROUP_MEMBERS = 50;
 
@@ -50,7 +50,6 @@ export default function GroupManageScreen() {
         quality: 0.9,
       });
       if (!res.canceled && res.assets?.length) {
-        // TODO(api): upload e salva URL definitivo
         updateGroup(g.id, { image: res.assets[0].uri });
       }
     } catch {
@@ -100,10 +99,15 @@ export default function GroupManageScreen() {
           {/* Titolo + badge */}
           <View style={styles.bottomRow}>
             <Text style={styles.groupName} numberOfLines={1}>{item.name}</Text>
-            <View style={styles.badge}>
+            <LinearGradient
+              colors={['#007fff', '#00a5f2']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.badge}
+            >
               <Ionicons name="person" size={12} color={colors.white} />
               <Text style={styles.badgeText}>{item.members?.length ?? 0}</Text>
-            </View>
+            </LinearGradient>
           </View>
         </Pressable>
 
@@ -116,22 +120,30 @@ export default function GroupManageScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    // ✅ Usa ScreenContainer: safe area + gestione inset. withScroll={false} perché usiamo FlatList.
+    <ScreenContainer withScroll={false} headerHeight={56}>
       {/* Header */}
       <View style={styles.header}>
-  <View style={styles.headerSide}>
-    <Pressable onPress={() => (navigation as any).goBack()} hitSlop={12}>
-      <Ionicons name="chevron-back" size={24} color={colors.text} />
-    </Pressable>
-  </View>
+        <View style={styles.headerSide}>
+          <Pressable onPress={() => (navigation as any).goBack()} hitSlop={12}>
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
+          </Pressable>
+        </View>
 
-  <Text style={styles.headerTitle}>Gruppi</Text>
+        <Text style={styles.headerTitle}>Gruppi</Text>
 
-  <Pressable onPress={onCreateGroup} hitSlop={12} style={styles.newBtn}>
-    <Ionicons name="add" size={18} color={colors.white} />
-    <Text style={styles.newBtnText}>Nuovo</Text>
-  </Pressable>
-</View>
+        <Pressable onPress={onCreateGroup} hitSlop={12}>
+          <LinearGradient
+            colors={['#007fff', '#00a5f2']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.newBtn}
+          >
+            <Ionicons name="add" size={18} color={colors.white} />
+            <Text style={styles.newBtnText}>Nuovo</Text>
+          </LinearGradient>
+        </Pressable>
+      </View>
 
       {/* Lista */}
       <FlatList
@@ -194,6 +206,6 @@ export default function GroupManageScreen() {
           </View>
         </Pressable>
       </Modal>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }

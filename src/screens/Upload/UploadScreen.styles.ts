@@ -5,7 +5,13 @@ import { spacing } from '../../theme/spacing';
 export const styles = StyleSheet.create({
   /* Layout base */
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxxl },
+
+  // 👉 tolto flex:1 qui, lasciato solo padding
+  content: { 
+    padding: spacing.lg,
+    gap: spacing.lg,
+    paddingBottom: spacing.xl, // prima era xxxl → troppo
+  },
 
   /* Header */
   header: {
@@ -149,7 +155,7 @@ export const styles = StyleSheet.create({
   sectionTitle: { color: colors.text, fontWeight: '800' },
   sectionHint: { color: colors.muted, fontSize: 12 },
 
-  /* Chip Album V2 (capsula con bordo gradient quando selezionata) */
+  /* Chip Album V2 */
   albumControl: {
     backgroundColor: colors.surface,
     borderRadius: 14,
@@ -170,7 +176,6 @@ export const styles = StyleSheet.create({
   },
   albumChipV2Sel: {
     borderColor: 'transparent',
-    // "finto" bordo gradient usando ombra colorata soft
     shadowColor: '#2F80ED',
     shadowOpacity: 0.25,
     shadowRadius: 6,

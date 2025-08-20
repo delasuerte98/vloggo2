@@ -15,9 +15,9 @@ import { RootStackParamList } from '../../navigation/StackNavigator';
 import { styles } from './LoginScreen.styles';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import ScreenContainer from '../../components/layout/ScreenContainer';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -77,17 +77,10 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        {
-          justifyContent: 'flex-start',
-          paddingTop: 36,
-        },
-      ]}
-    >
+    // ✅ Wrapper che: gestisce safe area, scroll e sposta tutto quando compare la tastiera
+    <ScreenContainer withScroll headerHeight={0} keyboardOffset={8}>
       {/* LOGO */}
-      <View style={{ alignItems: 'center', marginBottom: 16 }}>
+      <View style={{ alignItems: 'center', marginBottom: 16, paddingTop: 36 }}>
         <Animated.View
           style={{
             opacity: fadeAnim,
@@ -113,7 +106,7 @@ export default function LoginScreen({ navigation }: Props) {
       </Text>
 
       {/* FORM */}
-      <View style={{ gap: 14, marginTop: -10 }}>
+      <View style={{ gap: 14, marginTop: -10, paddingHorizontal: 16 }}>
         <View>
           <Text style={styles.label}>Email</Text>
           <TextInput
@@ -124,6 +117,7 @@ export default function LoginScreen({ navigation }: Props) {
             keyboardType="email-address"
             value={email}
             onChangeText={setEmail}
+            returnKeyType="next"
           />
         </View>
 
@@ -137,6 +131,8 @@ export default function LoginScreen({ navigation }: Props) {
               secureTextEntry={secure}
               value={password}
               onChangeText={setPassword}
+              returnKeyType="done"
+              onSubmitEditing={onLogin}
             />
             <Pressable
               style={{ position: 'absolute', right: 12, top: 14 }}
@@ -153,24 +149,26 @@ export default function LoginScreen({ navigation }: Props) {
       </View>
 
       {/* CTA */}
-      <Pressable onPress={onLogin} style={{ marginTop: 24 }}>
-        <LinearGradient
-          colors={['#4DA9E9', '#007AFF']}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={styles.button}
-        >
-          <Text style={styles.buttonText}>Accedi</Text>
-        </LinearGradient>
-      </Pressable>
+      <View style={{ paddingHorizontal: 16 }}>
+        <Pressable onPress={onLogin} style={{ marginTop: 24 }}>
+          <LinearGradient
+            colors={['#4DA9E9', '#007AFF']}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.button}
+          >
+            <Text style={styles.buttonText}>Accedi</Text>
+          </LinearGradient>
+        </Pressable>
 
-      {/* FOOTER LINK */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Non hai un account? </Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.footerLink}>Registrati</Text>
-        </TouchableOpacity>
+        {/* FOOTER LINK */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Non hai un account? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={styles.footerLink}>Registrati</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }

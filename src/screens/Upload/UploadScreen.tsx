@@ -1,5 +1,6 @@
+// src/screens/Upload/UploadScreen.tsx
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, Alert, TextInput, ScrollView } from 'react-native';
+import { View, Text, Pressable, Alert, TextInput, ScrollView, Animated } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
 import * as VideoThumbnails from 'expo-video-thumbnails';
@@ -8,12 +9,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { styles } from './UploadScreen.styles';
 import { typography } from '../../theme/typography';
 import { colors } from '../../theme/colors';
-import { DataContext } from '../../../App';
+import { DataContext, Group } from '../../../App';
 import DropdownMulti from '../../components/DropdownMulti';
-import AlbumCreateModal from '../../components/AlbumCreateModal';
 import GroupCreateSheet from '../Groups/components/GroupCreateSheet';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import AlbumEditorSheet from '../../components/AlbumEditorSheet';
+import { useRoute } from '@react-navigation/native';
+import GroupEditorSheet from '../Groups/components/GroupEditorSheet';
+import ScreenContainer from '../../components/layout/ScreenContainer';
 
+type UploadRouteParams = { preselectedAlbumId?: string };
 type AlbumOption = { id: string; title: string; isShared?: boolean };
 
 export default function UploadScreen() {
@@ -22,12 +26,14 @@ export default function UploadScreen() {
     albums,
     friends,
     addFeedItem,
-    createAlbum,
     addVideoToAlbum,
     createGroup,
     canUserUploadToAlbum,
     currentUser,
-  } = useContext(DataContext);
+    updateGroup,
+  } = useContext(DataContext); // ❌ rimosso createAlbum: non lo usiamo qui (lo fa AlbumEditorSheet)
+
+  const route = useRoute<any>();
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [videoUri, setVideoUri] = useState<string | null>(null);
@@ -35,13 +41,27 @@ export default function UploadScreen() {
   const [description, setDescription] = useState('');
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | 'none' | 'create'>('none');
-  const [albumModal, setAlbumModal] = useState(false);
-  const [groupSheet, setGroupSheet] = useState(false); // ✅ nuovo stato
+
+  // Editor album (crea/edit)
+  const [albumEditorVisible, setAlbumEditorVisible] = useState(false);
+  const [albumEditorMode, setAlbumEditorMode] = useState<'create' | 'edit'>('create');
+  const [albumEditorId, setAlbumEditorId] = useState<string | null>(null);
+
+  // Sheet gruppi (crea)
+  const [groupSheet, setGroupSheet] = useState(false);
+
+  // Editor gruppo (info → modifica)
+  const [groupEditorOpen, setGroupEditorOpen] = useState(false);
+  const [groupEditorSelected, setGroupEditorSelected] = useState<Group | null>(null);
 
   const videoRef = useRef<Video>(null);
   const [posterUri, setPosterUri] = useState<string | undefined>(undefined);
   const [showPoster, setShowPoster] = useState<boolean>(false);
   const [videoDuration, setVideoDuration] = useState<string | null>(null);
+
+  // Toast/snackbar
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const toastAnim = useRef(new Animated.Value(0)).current;
 
   const canUpload = !!videoUri && title.trim().length > 0;
 
@@ -51,6 +71,22 @@ export default function UploadScreen() {
       setHasPermission(status === 'granted');
     })();
   }, []);
+
+  useEffect(() => {
+    const pre = (route.params as UploadRouteParams | undefined)?.preselectedAlbumId;
+    if (pre && albums.some(a => a.id === pre)) {
+      setSelectedAlbumId(pre);
+    }
+  }, [route.params, albums]);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    Animated.timing(toastAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start(() => {
+      setTimeout(() => {
+        Animated.timing(toastAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => setToastMsg(null));
+      }, 1800);
+    });
+  };
 
   const formatDuration = (millis: number) => {
     const totalSec = Math.floor(millis / 1000);
@@ -95,7 +131,6 @@ export default function UploadScreen() {
   const albumOptions: AlbumOption[] = useMemo(
     () => [
       { id: 'none', title: 'Nessun album' },
-      { id: 'create', title: 'Crea nuovo album…' },
       ...allowedAlbums.map(a => ({
         id: a.id,
         title: a.title,
@@ -143,20 +178,42 @@ export default function UploadScreen() {
     setShowPoster(false);
     setVideoDuration(null);
 
-    Alert.alert('Caricato', 'Video aggiunto (album e feed).');
+    showToast('Video caricato ✅');
   };
 
-  const onCreateAlbum = (data: { title: string; coverUri?: string; contributors?: string[] }) => {
-    const newAlbum = createAlbum(data);
-    setAlbumModal(false);
-    setSelectedAlbumId(newAlbum.id);
+  // CREA ALBUM (EditorSheet mode='create')
+  const openCreateAlbum = () => {
+    setAlbumEditorMode('create');
+    setAlbumEditorId(null);
+    setAlbumEditorVisible(true);
   };
 
-  // ✅ nuova creazione gruppo (con lo stesso flow di GroupManageScreen)
+  // EDIT ALBUM SELEZIONATO
+  const openEditSelectedAlbum = () => {
+    const aid = typeof selectedAlbumId === 'string' ? selectedAlbumId : null;
+    if (!aid || aid === 'none' || aid === 'create') return;
+    setAlbumEditorMode('edit');
+    setAlbumEditorId(aid);
+    setAlbumEditorVisible(true);
+  };
+
+  // Crea gruppo (da Upload)
   const onCreateGroup = (data: { name: string; image?: string; memberUsernames: string[] }) => {
     const g = createGroup(data);
     setGroupSheet(false);
     setSelectedGroups(prev => [...prev, g.id]);
+    showToast('Gruppo creato ✅');
+  };
+
+  // Apri editor gruppo dalla “i”
+  const openGroupEditor = (groupId: string) => {
+    const g = groups.find(gr => gr.id === groupId) || null;
+    setGroupEditorSelected(g);
+    setGroupEditorOpen(true);
+  };
+  const closeGroupEditor = () => {
+    setGroupEditorOpen(false);
+    setGroupEditorSelected(null);
   };
 
   const handlePlay = async () => {
@@ -167,7 +224,8 @@ export default function UploadScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    // ✅ Wrapper unico scrollabile + gestione tastiera
+    <ScreenContainer withScroll headerHeight={1} keyboardOffset={8}  contentPaddingHorizontal={0}>
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -177,7 +235,8 @@ export default function UploadScreen() {
         <View style={styles.headerActions} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      {/* ✅ NIENTE ScrollView qui: lasciamo scorrere il wrapper */}
+      <View style={styles.content}>
         {/* CARD UNIFICATA: Video + Dettagli */}
         <View style={styles.unifiedCard}>
           {/* Blocco media */}
@@ -275,7 +334,12 @@ export default function UploadScreen() {
             </Pressable>
           </View>
 
-          <DropdownMulti groups={groups} selected={selectedGroups} onChange={setSelectedGroups} />
+          <DropdownMulti
+            groups={groups}
+            selected={selectedGroups}
+            onChange={setSelectedGroups}
+            onInfo={openGroupEditor} // ← clic sulla “i” apre l’editor gruppo
+          />
         </View>
 
         {/* ALBUM */}
@@ -287,10 +351,22 @@ export default function UploadScreen() {
               </View>
               <Text style={styles.sectionTitle}>Album</Text>
             </View>
-            <Text style={styles.sectionHint}>Organizza al meglio i tuoi video</Text>
+
+            {/* Azioni: modifica album selezionato + crea */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              {typeof selectedAlbumId === 'string' && selectedAlbumId !== 'none' && selectedAlbumId !== 'create' ? (
+                <Pressable onPress={openEditSelectedAlbum} hitSlop={6} style={styles.circleAddBtn}>
+                  <Ionicons name="settings-outline" size={16} color={colors.primaryDark} />
+                </Pressable>
+              ) : null}
+              <Pressable onPress={openCreateAlbum} hitSlop={8} style={styles.circleAddBtn}>
+                <Ionicons name="add" size={18} color={colors.primaryDark} />
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.albumControl}>
+            {/* ✅ questa ScrollView resta: è orizzontale per i chip */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {albumOptions.map(opt => {
                 const sel = selectedAlbumId === opt.id;
@@ -298,10 +374,6 @@ export default function UploadScreen() {
                   <Pressable
                     key={opt.id}
                     onPress={() => {
-                      if (opt.id === 'create') {
-                        setAlbumModal(true);
-                        return;
-                      }
                       if (opt.id !== 'none') {
                         const album = albums.find(a => a.id === opt.id);
                         if (album && !canUserUploadToAlbum(currentUser, album)) {
@@ -326,8 +398,9 @@ export default function UploadScreen() {
           </View>
         </View>
 
-        <View style={{ height: 100 }} />
-      </ScrollView>
+        {/* Spacer per non coprire l'ultimo campo con la bottom bar / tastiera */}
+        <View style={{ height: 120 }} />
+      </View>
 
       {/* Bottom CTA bar (gradient) */}
       <View style={styles.bottomBar}>
@@ -344,18 +417,73 @@ export default function UploadScreen() {
         </Pressable>
       </View>
 
-      {/* Modali */}
-      <AlbumCreateModal
-        visible={albumModal}
-        onClose={() => setAlbumModal(false)}
-        onCreate={onCreateAlbum}
+      {/* Editor album riusabile */}
+      <AlbumEditorSheet
+        visible={albumEditorVisible}
+        mode={albumEditorMode}
+        albumId={albumEditorId}
+        onClose={() => setAlbumEditorVisible(false)}
+        onCreated={(newAlbum) => {
+          setSelectedAlbumId(newAlbum.id);
+          setAlbumEditorVisible(false);
+          showToast('Album creato ✅');
+        }}
+        onSaved={() => {
+          setAlbumEditorVisible(false);
+          showToast('Album aggiornato ✅');
+        }}
       />
+
+      {/* Crea gruppo da Upload */}
       <GroupCreateSheet
         visible={groupSheet}
         friends={friends}
+        maxMembers={50}
         onClose={() => setGroupSheet(false)}
         onCreate={onCreateGroup}
       />
-    </SafeAreaView>
+
+      {/* Editor gruppo da “i” info */}
+      <GroupEditorSheet
+        visible={groupEditorOpen}
+        group={groupEditorSelected}
+        maxMembers={50}
+        friends={friends}
+        onClose={closeGroupEditor}
+        onSave={(id, payload) => updateGroup(id, payload)}
+      />
+
+      {/* Toast/snackbar */}
+      {toastMsg ? (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: 16,
+            right: 16,
+            bottom: 16,
+            borderRadius: 12,
+            paddingVertical: 12,
+            paddingHorizontal: 14,
+            backgroundColor: '#111827',
+            opacity: toastAnim,
+            transform: [
+              {
+                translateY: toastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [12, 0],
+                }),
+              },
+            ],
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <Ionicons name="checkmark-circle" size={18} color="#10b981" />
+          <Text style={{ color: '#fff', fontWeight: '600' }}>{toastMsg}</Text>
+        </Animated.View>
+      ) : null}
+    </ScreenContainer>
   );
 }

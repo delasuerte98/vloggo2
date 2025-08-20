@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Modal, Pressable, TextInput, Image, ScrollView, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  Modal,
+  Pressable,
+  TextInput,
+  Image,
+  ScrollView,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { styles } from './ProfileEditModal.styles';
@@ -36,31 +47,82 @@ export default function ProfileEditModal({ visible, initial, onClose, onSave }: 
 
   const pickAvatar = async () => {
     if (!perm) { Alert.alert('Permesso richiesto', 'Concedi accesso alla libreria.'); return; }
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1,1], quality: 0.9 });
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1,1],
+      quality: 0.9
+    });
     if (!res.canceled && res.assets?.length) setAvatar(res.assets[0].uri);
   };
 
-  const save = () => onSave({ fullName: name.trim(), avatar, bio: bio.trim(), location: location.trim() });
+  const save = () => onSave({
+    fullName: name.trim(),
+    avatar,
+    bio: bio.trim(),
+    location: location.trim()
+  });
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={[typography.subtitle, styles.title]}>Modifica profilo</Text>
-            <Pressable onPress={onClose}><Ionicons name="close" size={22} color={colors.text} /></Pressable>
-          </View>
-          <ScrollView style={{ maxHeight: '80%' }} contentContainerStyle={{ gap: 12 }}>
-            <Pressable style={styles.avatarWrap} onPress={pickAvatar}>
-              {avatar ? <Image source={{ uri: avatar }} style={styles.avatar} /> : <Ionicons name="person-circle-outline" size={72} color={colors.muted} />}
-              <Text style={styles.changePhoto}>Cambia foto</Text>
+        {/* ✅ KeyboardAvoidingView per spostare la card quando compare la tastiera */}
+        <KeyboardAvoidingView
+          behavior={Platform.select({ ios: 'padding', android: undefined })}
+          keyboardVerticalOffset={Platform.select({ ios: 8, android: 0 }) as number}
+          style={{ width: '100%' }}
+        >
+          <View style={styles.card}>
+            <View style={styles.header}>
+              <Text style={[typography.subtitle, styles.title]}>Modifica profilo</Text>
+              <Pressable onPress={onClose}><Ionicons name="close" size={22} color={colors.text} /></Pressable>
+            </View>
+
+            {/* Scroll interno, così i campi non vengono coperti e si può scorrere */}
+            <ScrollView
+              style={{ maxHeight: '80%' }}
+              contentContainerStyle={{ gap: 12, paddingBottom: 12 }}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Pressable style={styles.avatarWrap} onPress={pickAvatar}>
+                {avatar ? <Image source={{ uri: avatar }} style={styles.avatar} /> : <Ionicons name="person-circle-outline" size={72} color={colors.muted} />}
+                <Text style={styles.changePhoto}>Cambia foto</Text>
+              </Pressable>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Nome e cognome"
+                placeholderTextColor={colors.muted}
+                value={name}
+                onChangeText={setName}
+                returnKeyType="next"
+              />
+
+              <TextInput
+                style={[styles.input, { height: 90 }]}
+                multiline
+                placeholder="Bio"
+                placeholderTextColor={colors.muted}
+                value={bio}
+                onChangeText={setBio}
+                textAlignVertical="top"
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="Località"
+                placeholderTextColor={colors.muted}
+                value={location}
+                onChangeText={setLocation}
+                returnKeyType="done"
+              />
+            </ScrollView>
+
+            <Pressable style={styles.saveBtn} onPress={save}>
+              <Text style={styles.saveBtnText}>Salva</Text>
             </Pressable>
-            <TextInput style={styles.input} placeholder="Nome e cognome" placeholderTextColor={colors.muted} value={name} onChangeText={setName} />
-            <TextInput style={[styles.input, { height: 90 }]} multiline placeholder="Bio" placeholderTextColor={colors.muted} value={bio} onChangeText={setBio} />
-            <TextInput style={styles.input} placeholder="Località" placeholderTextColor={colors.muted} value={location} onChangeText={setLocation} />
-          </ScrollView>
-          <Pressable style={styles.saveBtn} onPress={save}><Text style={styles.saveBtnText}>Salva</Text></Pressable>
-        </View>
+          </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );

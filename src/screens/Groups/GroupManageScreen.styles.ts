@@ -1,3 +1,4 @@
+// src/screens/Groups/GroupManageScreen.styles.ts
 import { StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -32,12 +33,12 @@ export const styles = StyleSheet.create({
     color: colors.text,
   },
 
+  /** Pulsante “Nuovo” (gradient gestito via JSX) */
   newBtn: {
     alignSelf: 'flex-end',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.primary,
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     borderRadius: 14,
@@ -89,11 +90,12 @@ export const styles = StyleSheet.create({
     fontWeight: '800',
     maxWidth: '70%',
   },
+
+  /** Badge membri (gradient gestito via JSX) */
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.primary,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,

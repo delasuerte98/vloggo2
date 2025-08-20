@@ -5,26 +5,39 @@ import { DataContext, FeedItem } from '../../../App';
 import VideoCard from '../../components/VideoCard';
 import { typography } from '../../theme/typography';
 import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import ScreenContainer from '../../components/layout/ScreenContainer';
 
 export default function FeedScreen() {
   const { feed, currentUser } = useContext(DataContext);
+
+  // Solo post degli amici (come prima)
   const feedFriends = useMemo<FeedItem[]>(
     () => feed.filter(f => f.user.username !== currentUser),
     [feed, currentUser]
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={[typography.title, { color: colors.text, margin: spacing.lg }]}>Feed</Text>
+    // ⬇️ Wrapper che gestisce safe-area e tastiera (anche se qui non serve la tastiera)
+    <ScreenContainer withScroll={false} headerHeight={10}>
+      {/* Header coerente con le altre schermate */}
+      <View style={styles.header}>
+        <Text style={[typography.title, styles.headerTitle]}>Feed</Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      {/* Lista: lasciamo scorrere la FlatList (no ScrollView) */}
       <FlatList
-  data={feedFriends}
-  renderItem={({ item }) => <VideoCard item={item} />}
-  keyExtractor={(it) => it.id}
-  contentContainerStyle={styles.listContent}
-  ItemSeparatorComponent={() => <View style={{ height: 16 }} />} // ← SPAZIO TRA LE CARD
-/>
-    </SafeAreaView>
+        data={feedFriends}
+        keyExtractor={(it) => it.id}
+        renderItem={({ item }) => <VideoCard item={item} />}
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.listContent}
+        ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+        // migliora comportamento con notch/statusbar
+        contentInsetAdjustmentBehavior="automatic"
+        // spazio per eventuale bottom bar (se presente in altre viste)
+        scrollIndicatorInsets={{ bottom: 16 }}
+      />
+    </ScreenContainer>
   );
 }

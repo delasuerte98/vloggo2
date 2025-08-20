@@ -1,13 +1,40 @@
+// src/components/AlbumManageModal.styles.ts
 import { StyleSheet } from 'react-native';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, gap: spacing.md },
-  title: { color: colors.text, fontWeight: '800', fontSize: 18 },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    padding: spacing.lg,
+  },
+
+  /** Header */
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  title: {
+    flex: 1,
+    textAlign: 'center',
+    color: colors.text,
+    fontWeight: '800',
+    fontSize: 18,
+  },
+  closeBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  closeText: { color: colors.white, fontWeight: '700' },
+
+  /** Card */
   albumCard: {
     backgroundColor: colors.white,
-    borderRadius: 20,
+    borderRadius: 18,
     padding: spacing.lg,
     marginBottom: spacing.md,
     shadowColor: '#000',
@@ -18,69 +45,44 @@ export const styles = StyleSheet.create({
   },
   imageWrap: {
     alignSelf: 'center',
-    width: 80, height: 80, borderRadius: 40, backgroundColor: colors.surface,
-    alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm, overflow: 'hidden',
-  },
-  image: { width: '100%', height: '100%' },
-  albumTitle: { color: colors.text, textAlign: 'center', fontWeight: '700', marginBottom: spacing.sm },
-  subTitle: { color: colors.muted, marginTop: spacing.xs, marginBottom: spacing.xs },
-  groupsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  groupChip: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: colors.surface,
-    borderRadius: 999,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
+    marginBottom: spacing.sm,
   },
-  groupChipSelected: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
-  groupText: { color: colors.text },
-  deleteBtn: {
-    marginTop: spacing.md,
-    backgroundColor: '#ef4444',
-    borderRadius: 14,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
+  image: { width: '100%', height: '100%' },
+  albumTitle: {
+    color: colors.text,
+    textAlign: 'center',
+    fontWeight: '700',
+    marginBottom: spacing.md,
+  },
+
+  summaryRow: {
     flexDirection: 'row',
-    gap: spacing.xs,
-    justifyContent: 'center',
-  },
-  deleteText: { color: '#fff', fontWeight: '700' },
-  closeBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    paddingVertical: spacing.md,
     alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
   },
-  closeText: { color: '#fff', fontWeight: '700' },
-sharedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
-sharedLabel: { fontSize: 16, fontWeight: '600' },
-contributorsBox: { marginTop: 12 },
-sectionTitle: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
-chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: '#ccc' },
-chipSelected: { backgroundColor: '#e8f0ff', borderColor: '#6a9cff' },
-chipText: { fontSize: 14 },
-chipTextSelected: { fontWeight: '700' },
-btnDisabled: { opacity: 0.5 },
-// NEW
-ownerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-ownerBadge: { borderRadius: 12, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: '#eef2ff' },
-ownerBadgeText: { fontSize: 12, fontWeight: '700' },
+  summaryText: { color: colors.text },
 
-sectionTitle: { fontSize: 14, fontWeight: '700', marginTop: 8, marginBottom: 6 },
-smallLabel: { fontSize: 12, opacity: 0.8, marginBottom: 6 },
-
-chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: '#ccc' },
-chipSelected: { backgroundColor: '#e8f0ff', borderColor: '#6a9cff' },
-chipText: { fontSize: 14 },
-chipTextSelected: { fontWeight: '700' },
-
-btnPrimary: { paddingVertical: 12, alignItems: 'center', borderRadius: 12, backgroundColor: '#1f6feb', marginTop: 8 },
-btnPrimaryText: { color: '#fff', fontWeight: '700' },
-btnSecondary: { paddingVertical: 12, alignItems: 'center', borderRadius: 12, backgroundColor: '#f1f3f5', marginTop: 8 },
-btnSecondaryText: { fontWeight: '700' },
-btnDisabled: { opacity: 0.5 },
-
+  /** CTA Gestisci (gradient in JSX) */
+  manageBtn: {
+    marginTop: spacing.md,
+    borderRadius: 14,
+  },
+  manageBtnInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: spacing.md,
+  },
+  manageBtnText: { color: colors.white, fontWeight: '700' },
 });

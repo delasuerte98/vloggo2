@@ -1,6 +1,7 @@
+// src/components/DropdownMulti.tsx
 import React, { useMemo, useState } from 'react';
 import {
-  View, Text, Pressable, ScrollView, Modal, Image,
+  View, Text, Pressable, ScrollView, Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './DropdownMulti.styles';
@@ -12,16 +13,15 @@ type Props = {
   groups: Group[];
   selected: string[];
   onChange: (ids: string[]) => void;
+  onInfo?: (id: string) => void;   // ✅ nuova prop
 };
 
-export default function DropdownMulti({ groups, selected, onChange }: Props) {
+export default function DropdownMulti({ groups, selected, onChange, onInfo }: Props) {
   const [open, setOpen] = useState(false);
-  const [showInfoFor, setShowInfoFor] = useState<Group | null>(null);
 
   const selectedLabels = useMemo(() => {
     const names = groups.filter(g => selected.includes(g.id)).map(g => g.name);
     return names.length ? names.join(', ') : 'Nessun gruppo selezionato';
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, groups]);
 
   const toggle = (id: string) => {
@@ -34,20 +34,23 @@ export default function DropdownMulti({ groups, selected, onChange }: Props) {
 
   return (
     <View style={styles.wrapper}>
+      {/* Controllo dropdown */}
       <Pressable onPress={() => setOpen(o => !o)} style={styles.control}>
-        <Text style={[typography.body, styles.value]} numberOfLines={1}>{selectedLabels}</Text>
+        <Text style={[typography.body, styles.value]} numberOfLines={1}>
+          {selectedLabels}
+        </Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.muted} />
       </Pressable>
 
+      {/* Lista gruppi */}
       {open && (
         <View style={styles.dropdown}>
           <ScrollView style={{ maxHeight: 200 }} contentContainerStyle={{ paddingVertical: 4 }}>
             {groups.map((g) => {
               const selectedRow = selected.includes(g.id);
               return (
-                <Pressable
+                <View
                   key={g.id}
-                  onPress={() => toggle(g.id)}
                   style={[styles.row, selectedRow && styles.rowSelected]}
                 >
                   {g.image ? (
@@ -55,47 +58,32 @@ export default function DropdownMulti({ groups, selected, onChange }: Props) {
                   ) : (
                     <Ionicons name="people-circle-outline" size={22} color={colors.muted} />
                   )}
+
                   <Text style={[typography.body, styles.rowText]}>{g.name}</Text>
 
-                  <Pressable onPress={() => setShowInfoFor(g)} style={styles.infoBtn}>
+                  {/* Pulsante info → delega al padre */}
+                  <Pressable
+                    onPress={() => onInfo?.(g.id)}
+                    style={styles.infoBtn}
+                    hitSlop={8}
+                  >
                     <Ionicons name="information-circle-outline" size={20} color={colors.primaryDark} />
                   </Pressable>
 
-                  <Ionicons
-                    name={selectedRow ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={20}
-                    color={selectedRow ? colors.primary : colors.muted}
-                  />
-                </Pressable>
+                  {/* Checkbox */}
+                  <Pressable onPress={() => toggle(g.id)} hitSlop={8}>
+                    <Ionicons
+                      name={selectedRow ? 'checkmark-circle' : 'ellipse-outline'}
+                      size={20}
+                      color={selectedRow ? colors.primary : colors.muted}
+                    />
+                  </Pressable>
+                </View>
               );
             })}
           </ScrollView>
         </View>
       )}
-
-      {/* Info modal */}
-      <Modal visible={!!showInfoFor} transparent animationType="fade" onRequestClose={() => setShowInfoFor(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={[typography.subtitle, styles.modalTitle]}>
-                {showInfoFor?.name}
-              </Text>
-              <Pressable onPress={() => setShowInfoFor(null)}>
-                <Ionicons name="close" size={22} color={colors.text} />
-              </Pressable>
-            </View>
-            <ScrollView style={{ maxHeight: '80%' }}>
-              {(showInfoFor?.members ?? []).map((m, i) => (
-                <View key={i} style={styles.memberRow}>
-                  <Ionicons name="person-outline" size={18} color={colors.muted} />
-                  <Text style={[typography.body, styles.memberText]}>{m}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

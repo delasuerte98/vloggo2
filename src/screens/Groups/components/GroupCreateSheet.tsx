@@ -14,6 +14,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
@@ -22,7 +23,7 @@ import { Friend } from '../../../../App';
 type CreatePayload = {
   name: string;
   image?: string;
-  members: string[]; // usernames
+  members: string[];
 };
 
 type Props = {
@@ -98,7 +99,6 @@ export default function GroupCreateSheet({
         quality: 0.9,
       });
       if (!res.canceled && res.assets?.length) {
-        // TODO(api): upload immagine su backend e salva URL definitivo
         setImageUri(res.assets[0].uri);
       }
     } catch {
@@ -108,7 +108,6 @@ export default function GroupCreateSheet({
 
   const closeReset = () => {
     onClose();
-    // reset allo chiudersi
     setTimeout(() => {
       setName('');
       setQuery('');
@@ -143,19 +142,31 @@ export default function GroupCreateSheet({
             Nuovo gruppo
           </Text>
 
-          <Pressable onPress={save} disabled={!isValid} hitSlop={12} style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            backgroundColor: isValid ? colors.primary : colors.muted,
-            paddingHorizontal: spacing.md,
-            paddingVertical: 8,
-            borderRadius: 14,
-            opacity: isValid ? 1 : 0.6,
-          }}>
-            <Ionicons name="checkmark" size={18} color={colors.white} />
-            <Text style={{ color: colors.white, fontWeight: '700' }}>Crea</Text>
-          </Pressable>
+          {/* Pulsante CREA in gradient */}
+          <LinearGradient
+            colors={isValid ? ['#007fff', '#00a5f2'] : [colors.muted, colors.muted]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              borderRadius: 14,
+              opacity: isValid ? 1 : 0.6,
+            }}
+          >
+            <Pressable
+              onPress={save}
+              disabled={!isValid}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                paddingHorizontal: spacing.md,
+                paddingVertical: 8,
+              }}
+            >
+              <Ionicons name="checkmark" size={18} color={colors.white} />
+              <Text style={{ color: colors.white, fontWeight: '700' }}>Crea</Text>
+            </Pressable>
+          </LinearGradient>
         </View>
 
         <FlatList
@@ -245,7 +256,7 @@ export default function GroupCreateSheet({
                 <Text style={{ color: colors.muted }}>
                   Membri ({members.length}/{maxMembers})
                 </Text>
-                {limitMsg ? <Text style={{ color: colors.primary, fontWeight: '600' }}>{limitMsg}</Text> : null}
+                {limitMsg ? <Text style={{ color: '#00a5f2', fontWeight: '600' }}>{limitMsg}</Text> : null}
               </View>
             </>
           }
@@ -276,7 +287,7 @@ export default function GroupCreateSheet({
                 <Ionicons
                   name={isMember ? 'checkmark-circle' : 'ellipse-outline'}
                   size={24}
-                  color={isMember ? colors.primary : colors.muted}
+                  color={isMember ? '#00a5f2' : colors.muted}
                 />
               </Pressable>
             );
