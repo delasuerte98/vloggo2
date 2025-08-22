@@ -6,10 +6,10 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme, Theme } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from "expo-av";
+import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import StackNavigator from './src/navigation/StackNavigator';
 import { colors } from './src/theme/colors';
-import { Alert } from 'react-native'; // NEW
+import { Alert } from 'react-native';
 
 /* ===========================
  * Tipi
@@ -28,28 +28,26 @@ export type Friend = { id: string; username: string; fullName: string; avatar?: 
 
 export type Group = { id: string; name: string; image?: string; members: string[] };
 
-// CHANGED: AlbumVideo ora supporta risposte video
 export type AlbumVideo = {
   id: string;
   uri: string;
   title: string;
   description: string;
-  replies?: AlbumVideo[]; // NEW: risposte video al singolo video
+  replies?: AlbumVideo[]; // risposte video
 };
 
-// CHANGED: Album esteso con permessi (ownerId, contributors, viewers?)
 export type Album = {
   id: string;
   title: string;
-  coverUri?: string;
+  coverUri?: string; // <-- scelta dall'utente, non toccarla in deleteVideo
   count: number;
   videos: AlbumVideo[];
   groupId: string;
 
-  // --- Permessi (condivisione) ---
-  ownerId: string;         // NEW: usa lo username senza '@'
-  contributors: string[];  // NEW: array di username che possono caricare
-  viewers?: string[];      // NEW: predisposizione sola lettura (non usato ora)
+  // Permessi (condivisione)
+  ownerId: string;        // usa lo username senza '@'
+  contributors: string[]; // utenti che possono caricare
+  viewers?: string[];     // predisposizione sola lettura (non usata ora)
 };
 
 export type FeedComment = { user: string; text: string };
@@ -71,7 +69,6 @@ export type FeedItem = {
 /* ===========================
  * Helper permessi
  * =========================== */
-// NEW: helper richiesto (puoi importarlo dove serve oppure usare dal Context)
 export const canUserUploadToAlbum = (userId: string, album: Album): boolean =>
   album.ownerId === userId || album.contributors.includes(userId);
 
@@ -88,6 +85,7 @@ export type DataContextType = {
 
   // Profilo
   updateProfile: (p: Partial<Profile>) => void;
+  addFriend: (f: Friend) => void;
 
   // Gruppi
   createGroup: (args: { name: string; image?: string; memberUsernames: string[] }) => Group;
@@ -99,17 +97,17 @@ export type DataContextType = {
     title: string;
     coverUri?: string;
     groupId: string;
-    contributors?: string[]; // NEW
-    // viewers?: string[];   // NEW (predisposizione, non usato ora)
+    contributors?: string[];
   }) => Album;
   updateAlbum: (id: string, updates: Partial<Album>) => void;
   deleteAlbum: (id: string) => void;
   addVideoToAlbum: (args: { albumId: string; video: AlbumVideo }) => void;
+  deleteVideo: (albumId: string, videoId: string) => void; // ← qui
 
-  // NEW: video-replies
+  // Video replies
   addVideoReply: (args: { albumId: string; parentVideoId: string; reply: AlbumVideo }) => void;
 
-  // NEW: helper gestione permessi/contributori
+  // Permessi contributors
   canUserUploadToAlbum: (userId: string, album: Album) => boolean;
   addAlbumContributors: (albumId: string, friendIds: string[]) => void;
   removeAlbumContributor: (albumId: string, friendId: string) => void;
@@ -142,9 +140,8 @@ export default function App() {
           shouldDuckAndroid: true,
           playThroughEarpieceAndroid: false,
         });
-      } catch (e) {
+      } catch {
         // evita crash se il device non supporta qualche flag
-        // console.warn("Audio mode error", e);
       }
     })();
   }, []);
@@ -163,10 +160,10 @@ export default function App() {
     following: 183,
   });
 
-  const currentUser = profile.username.replace('@', ''); // CHANGED: comodo per ownerId/permessi
+  const currentUser = profile.username.replace('@', '');
 
   // ---- Friends ----
-  const [friends] = useState<Friend[]>([
+  const [friends, setFriends] = useState<Friend[]>([
     { id: 'u1', username: 'marta', fullName: 'Marta Verdi' },
     { id: 'u2', username: 'sara', fullName: 'Sara Neri' },
     { id: 'u3', username: 'gio', fullName: 'Giorgio Blu' },
@@ -181,7 +178,6 @@ export default function App() {
   ]);
 
   // ---- Albums ----
-  // CHANGED: aggiunti ownerId/contributors coerenti con gli username del mock
   const [albums, setAlbums] = useState<Album[]>([
     {
       id: 'a1',
@@ -189,9 +185,8 @@ export default function App() {
       coverUri: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
       count: 5,
       groupId: 'g1',
-      ownerId: 'luca',                 // NEW
-      contributors: ['marta', 'sara'], // NEW
-      // viewers: [],                   // NEW (opzionale)
+      ownerId: 'luca',
+      contributors: ['marta', 'sara'],
       videos: [
         { id: 'v1', uri: 'https://d23dyxeqlo5psv.cloudfront.net/big_buck_bunny.mp4', title: 'Spiaggia', description: 'Giornata al mare' },
         { id: 'v2', uri: 'https://d23dyxeqlo5psv.cloudfront.net/big_buck_bunny.mp4', title: 'Passeggiata', description: 'Tramonto' },
@@ -206,8 +201,8 @@ export default function App() {
       coverUri: 'https://images.unsplash.com/photo-1543589077-47d81606c1bf?w=800&q=80',
       count: 3,
       groupId: 'g4',
-      ownerId: 'luca',        // NEW
-      contributors: [],       // NEW (privato)
+      ownerId: 'luca',
+      contributors: [],
       videos: [
         { id: 'v4', uri: 'https://d23dyxeqlo5psv.cloudfront.net/big_buck_bunny.mp4', title: 'Albero', description: 'Decorazioni' },
         { id: 'v5', uri: 'https://d23dyxeqlo5psv.cloudfront.net/big_buck_bunny.mp4', title: 'Cena', description: 'Panettone' },
@@ -226,7 +221,7 @@ export default function App() {
       group: { ...groups[0] },
       albumId: 'a1',
       albumTitle: 'Vacanza a Riccione',
-      user: { username: 'marta' },
+      user: { username: currentUser },
       likes: ['sara'],
       comments: [{ user: 'sara', text: 'Che stile!' }],
     },
@@ -238,6 +233,10 @@ export default function App() {
   // Profilo
   const updateProfile: DataContextType['updateProfile'] = (p) =>
     setProfile(prev => ({ ...prev, ...p }));
+
+  const addFriend: DataContextType['addFriend'] = (f) => {
+    setFriends(prev => (prev.some(p => p.id === f.id) ? prev : [f, ...prev]));
+  };
 
   // Gruppi
   const createGroup: DataContextType['createGroup'] = ({ name, image, memberUsernames }) => {
@@ -255,7 +254,7 @@ export default function App() {
   };
 
   // Album
-  const createAlbum: DataContextType['createAlbum'] = ({ title, coverUri, groupId, contributors }) => { // CHANGED
+  const createAlbum: DataContextType['createAlbum'] = ({ title, coverUri, groupId, contributors }) => {
     const gid = groupId || groups[0]?.id || 'g1';
     const newAlbum: Album = {
       id: `a_${Date.now()}`,
@@ -264,12 +263,10 @@ export default function App() {
       count: 0,
       videos: [],
       groupId: gid,
-      ownerId: currentUser,                 // NEW
-      contributors: contributors ?? [],     // NEW
-      // viewers: [],                        // NEW (predisposizione)
+      ownerId: currentUser,
+      contributors: contributors ?? [],
     };
     setAlbums(prev => [newAlbum, ...prev]);
-    // TODO(api): POST /albums { title, coverUri?, groupId, ownerId, contributors[] }
     if (newAlbum.contributors.length) {
       Alert.alert('Album condiviso creato', 'I contributori selezionati possono caricare video.');
     }
@@ -288,13 +285,11 @@ export default function App() {
           : a,
       ),
     );
-    // TODO(api): PATCH /albums/:id (campi generici)
   };
 
   const deleteAlbum: DataContextType['deleteAlbum'] = (id) => {
     setAlbums(prev => prev.filter(a => a.id !== id));
     setFeed(prev => prev.map(f => (f.albumId === id ? { ...f, albumId: undefined, albumTitle: undefined } : f)));
-    // TODO(api): DELETE /albums/:id
   };
 
   const addVideoToAlbum: DataContextType['addVideoToAlbum'] = ({ albumId, video }) => {
@@ -305,34 +300,44 @@ export default function App() {
         return { ...a, videos, count: videos.length, coverUri: a.coverUri ?? video.uri };
       }),
     );
-    // TODO(api): POST /albums/:id/uploads { file... }
   };
 
-  // NEW: aggiunge una risposta video a un video esistente nell'album
+  // ⬇️ ELIMINAZIONE VIDEO — NON tocca MAI coverUri
+  const deleteVideo: DataContextType['deleteVideo'] = (albumId, videoId) => {
+    setAlbums(prev =>
+      prev.map(a => {
+        if (a.id !== albumId) return a;
+
+        const videos = a.videos.filter(v => v.id !== videoId);
+        const count = videos.length;
+
+        // coverUri rimane quella scelta dall'utente, non viene modificata
+        return { ...a, videos, count };
+      })
+    );
+    // NB: il feed non ha un riferimento diretto al videoId → non lo tocchiamo qui.
+  };
+
+  // Video reply
   const addVideoReply: DataContextType['addVideoReply'] = ({ albumId, parentVideoId, reply }) => {
-    // Guard permessi lato client (owner/contributor)
     const album = albums.find(a => a.id === albumId);
     if (!album) return;
     if (!canUserUploadToAlbum(currentUser, album)) {
       Alert.alert('Accesso negato', 'Non puoi rispondere con un video in questo album.');
       return;
     }
-
     setAlbums(prev =>
       prev.map(a => {
         if (a.id !== albumId) return a;
         const videos = a.videos.map(v =>
-          v.id === parentVideoId
-            ? { ...v, replies: [reply, ...(v.replies ?? [])] } // NEW: inserisce in testa
-            : v
+          v.id === parentVideoId ? { ...v, replies: [reply, ...(v.replies ?? [])] } : v
         );
         return { ...a, videos };
       })
     );
-    // TODO(api): POST /albums/:albumId/videos/:parentVideoId/replies
   };
 
-  // NEW: gestione contributors (multi-add e single-remove)
+  // Contributors
   const addAlbumContributors: DataContextType['addAlbumContributors'] = (albumId, friendIds) => {
     setAlbums(prev =>
       prev.map(a =>
@@ -341,7 +346,6 @@ export default function App() {
           : a,
       ),
     );
-    // TODO(api): PATCH /albums/:id/contributors { add: string[] }
     Alert.alert('Contributori aggiunti', 'Gli utenti selezionati ora possono caricare in questo album.');
   };
 
@@ -351,13 +355,8 @@ export default function App() {
         a.id === albumId ? { ...a, contributors: a.contributors.filter(u => u !== friendId) } : a,
       ),
     );
-    // TODO(api): PATCH /albums/:id/contributors { remove: [friendId] }
     Alert.alert('Contributore rimosso', 'L’utente non può più caricare in questo album.');
   };
-
-  // NEW: wrapper per esporre il check permessi via Context
-  const canUserUploadToAlbumCtx: DataContextType['canUserUploadToAlbum'] = (userId, album) =>
-    canUserUploadToAlbum(userId, album);
 
   // Feed
   const addFeedItem: DataContextType['addFeedItem'] = ({ uri, title, description, groupId, albumId }) => {
@@ -376,8 +375,11 @@ export default function App() {
       comments: [],
     };
     setFeed(prev => [item, ...prev]);
-    // TODO(api): POST /feed
   };
+
+  // Wrapper permessi via Context
+  const canUserUploadToAlbumCtx: DataContextType['canUserUploadToAlbum'] = (userId, album) =>
+    canUserUploadToAlbum(userId, album);
 
   const ctxValue = useMemo<DataContextType>(
     () => ({
@@ -388,17 +390,19 @@ export default function App() {
       albums,
       feed,
       updateProfile,
+      addFriend,
       createGroup,
       updateGroup,
       deleteGroup,
-      createAlbum,         // CHANGED
+      createAlbum,
       updateAlbum,
       deleteAlbum,
       addVideoToAlbum,
-      addVideoReply,       // NEW
-      canUserUploadToAlbum: canUserUploadToAlbumCtx, // NEW
-      addAlbumContributors,                           // NEW
-      removeAlbumContributor,                         // NEW
+      deleteVideo, // ← esportata
+      addVideoReply,
+      canUserUploadToAlbum: canUserUploadToAlbumCtx,
+      addAlbumContributors,
+      removeAlbumContributor,
       addFeedItem,
     }),
     [currentUser, profile, friends, groups, albums, feed],

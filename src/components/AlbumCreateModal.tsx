@@ -1,146 +1,179 @@
-// src/components/AlbumCreateModal.tsx
-// CHANGED: aggiunti toggle "Condiviso" + multi-selezione amici e passaggio contributors a onCreate
-
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, Modal, Pressable, TextInput, Image, Alert } from 'react-native';
+// src/components/AlbumManageModal.tsx
+import React, { useContext } from 'react';
+import { View, Text, Modal, Pressable, Image, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
-import { styles } from './AlbumCreateModal.styles';
-import { typography } from '../theme/typography';
+
+import { DataContext } from '../../App';
+import { styles } from './AlbumManageModal.styles';
 import { colors } from '../theme/colors';
-import { DataContext } from '../../App'; // NEW
 
 type Props = {
   visible: boolean;
   onClose: () => void;
-  // CHANGED: esteso per supportare contributors iniziali
-  onCreate: (data: { title: string; coverUri?: string; contributors?: string[] }) => void;
+  // 👉 nuove callback verso il parent
+  onRequestCreate: () => void;
+  onRequestEdit: (albumId: string) => void;
+  // 👉 trigger quando la modale ha finito di chiudersi (per aprire l'editor dopo)
+  onDismiss?: () => void;
 };
 
-export default function AlbumCreateModal({ visible, onClose, onCreate }: Props) {
-  const { friends } = useContext(DataContext); // NEW
-  const [title, setTitle] = useState('');
-  const [coverUri, setCoverUri] = useState<string | undefined>(undefined);
-  const [perm, setPerm] = useState(true);
+export default function AlbumManageModal({
+  visible,
+  onClose,
+  onRequestCreate,
+  onRequestEdit,
+  onDismiss,
+}: Props) {
+  const insets = useSafeAreaInsets();
+  const { albums, updateAlbum, groups } = useContext(DataContext);
 
-  // NEW: condivisione
-  const [shared, setShared] = useState(false);
-  const [selectedContribs, setSelectedContribs] = useState<string[]>([]); // usernames
-
-  useEffect(() => {
-    if (!visible) {
-      setTitle('');
-      setCoverUri(undefined);
-      setShared(false);                // NEW
-      setSelectedContribs([]);         // NEW
-    }
-  }, [visible]);
-
-  useEffect(() => {
-    (async () => {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      setPerm(status === 'granted');
-    })();
-  }, []);
-
-  const pickCover = async () => {
-    if (!perm) {
-      Alert.alert('Permesso richiesto', 'Concedi accesso alla libreria.');
-      return;
-    }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.9,
-    });
-    if (!res.canceled && res.assets?.length) setCoverUri(res.assets[0].uri);
+  const pickImage = async (albumId: string) => {
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: false,
+        quality: 0.9,
+      });
+      if (!res.canceled && res.assets?.length) {
+        updateAlbum(albumId, { coverUri: res.assets[0].uri });
+      }
+    } catch {}
   };
 
-  const toggleContributor = (username: string) => {
-    setSelectedContribs(prev =>
-      prev.includes(username) ? prev.filter(u => u !== username) : [...prev, username],
-    );
-  };
-
-  const create = () => {
-    if (!title.trim()) return Alert.alert('Titolo obbligatorio');
-    onCreate({
-      title: title.trim(),
-      coverUri,
-      contributors: shared ? selectedContribs : [], // NEW
-    });
-  };
+  const groupName = (gid?: string) =>
+    groups.find(g => g.id === gid)?.name ?? '—';
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={[typography.subtitle, styles.title]}>Crea album</Text>
-            <Pressable onPress={onClose}>
-              <Ionicons name="close" size={22} color={colors.text} />
-            </Pressable>
-          </View>
-
-          <Pressable style={styles.coverPicker} onPress={pickCover}>
-            {coverUri ? (
-              <Image source={{ uri: coverUri }} style={styles.cover} />
-            ) : (
-              <Ionicons name="image-outline" size={48} color={colors.muted} />
-            )}
-            <Text style={styles.coverHint}>{coverUri ? 'Cambia immagine' : 'Scegli immagine album'}</Text>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="fullScreen"
+      onRequestClose={onClose}
+      onDismiss={onDismiss} // 👈 importantissimo: il parent apre l'editor QUI
+    >
+      <View
+        style={[
+          styles.container,
+          { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 12) },
+        ]}
+      >
+        {/* Header */}
+        <View style={styles.headerRow}>
+          {/* NUOVO: “Nuovo” chiede al parent di aprire l'editor (modal Upload-style) */}
+          <Pressable
+            onPress={onRequestCreate}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Crea nuovo album"
+            style={{ borderRadius: 12, overflow: 'hidden' }}
+          >
+            <LinearGradient
+              colors={colors.gradients?.primary ?? ['#007fff', '#00a5f2']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Ionicons name="add" size={16} color={colors.white} />
+              <Text style={{ color: colors.white, fontWeight: '700' }}>Nuovo</Text>
+            </LinearGradient>
           </Pressable>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Titolo album"
-            placeholderTextColor={colors.muted}
-            value={title}
-            onChangeText={setTitle}
-          />
+          <Text style={styles.title}>Gestione album</Text>
 
-          {/* NEW: toggle Condiviso */}
-          <View style={styles.sharedRow}>
-            <Text style={styles.sharedLabel}>Condiviso</Text>
-            <Pressable onPress={() => setShared(s => !s)} hitSlop={8} style={{ padding: 6 }}>
-              <Ionicons
-                name={shared ? 'toggle' : 'toggle-outline'}
-                size={32}
-                color={shared ? colors.primary : colors.muted}
-              />
-            </Pressable>
-          </View>
+          <Pressable onPress={onClose} hitSlop={10} style={styles.closeBtn}>
+            <Text style={styles.closeText}>Chiudi</Text>
+          </Pressable>
+        </View>
 
-          {/* NEW: selezione multi-amici */}
-          {shared && (
-            <View style={styles.contributorsBox}>
-              <Text style={styles.sectionTitle}>Contributori iniziali</Text>
-              <View style={styles.chipsContainer}>
-                {friends.map(f => {
-                  const selected = selectedContribs.includes(f.username);
-                  return (
-                    <Pressable
-                      key={f.id}
-                      onPress={() => toggleContributor(f.username)}
-                      style={[styles.chip, selected && styles.chipSelected]}
-                    >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                        {f.fullName || f.username}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+        {/* Lista album */}
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) }}
+          contentInsetAdjustmentBehavior="always"
+        >
+          {albums.map(a => (
+            <View key={a.id} style={styles.albumCard}>
+              {/* Cover (tap per cambiare immagine) */}
+              <Pressable onPress={() => pickImage(a.id)} style={styles.imageWrap} hitSlop={8}>
+                {a.coverUri ? (
+                  <Image source={{ uri: a.coverUri }} style={styles.image} />
+                ) : (
+                  <Ionicons name="images-outline" size={46} color={colors.primary} />
+                )}
+              </Pressable>
+
+              <Text style={styles.albumTitle} numberOfLines={1}>
+                {a.title}
+              </Text>
+
+              {/* Riassunto */}
+              <View style={styles.summaryRow}>
+                <Ionicons name="people-outline" size={16} color={colors.muted} />
+                <Text style={styles.summaryText}>Gruppo: {groupName(a.groupId)}</Text>
               </View>
-            </View>
-          )}
+              <View style={styles.summaryRow}>
+                <Ionicons name="person-add-outline" size={16} color={colors.muted} />
+                <Text style={styles.summaryText}>
+                  Contributori: {(a.contributors?.length ?? 0)}
+                </Text>
+              </View>
 
+              {/* CTA Gestisci → chiede al parent di aprire editor in modalità edit */}
+              <LinearGradient
+                colors={colors.gradients?.primary ?? ['#007fff', '#00a5f2']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.manageBtn}
+              >
+                <Pressable
+                  onPress={() => onRequestEdit(a.id)}
+                  style={styles.manageBtnInner}
+                  hitSlop={6}
+                >
+                  <Ionicons name="settings-outline" size={18} color={colors.white} />
+                  <Text style={styles.manageBtnText}>Gestisci</Text>
+                </Pressable>
+              </LinearGradient>
+            </View>
+          ))}
+        </ScrollView>
+
+        {/* FAB nuovo album */}
+        <View style={{ position: 'absolute', right: 20, bottom: 20 }}>
           <Pressable
-            style={[styles.createBtn, (!title.trim() || (shared && selectedContribs.length === 0)) && styles.btnDisabled]}
-            onPress={create}
-            disabled={!title.trim() || (shared && selectedContribs.length === 0)}
+            onPress={onRequestCreate}
+            style={{ borderRadius: 28, overflow: 'hidden' }}
+            accessibilityRole="button"
+            accessibilityLabel="Crea nuovo album"
           >
-            <Text style={styles.createBtnText}>Crea</Text>
+            <LinearGradient
+              colors={colors.gradients?.primary ?? ['#007fff', '#00a5f2']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#000',
+                shadowOpacity: 0.22,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 3 },
+                elevation: 8,
+              }}
+            >
+              <Ionicons name="add" size={26} color={colors.white} />
+            </LinearGradient>
           </Pressable>
         </View>
       </View>

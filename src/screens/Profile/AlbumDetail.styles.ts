@@ -28,7 +28,9 @@ export const styles = StyleSheet.create({
   topBarTitle: {
     color: colors.text,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.2,
+    textAlign: 'center',
   },
   addBtn: {
     flexDirection: 'row',

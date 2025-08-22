@@ -11,10 +11,15 @@ import { colors } from "../theme/colors";
 import GroupPill from "./GroupPill";
 import AlbumPill from "./AlbumPill";
 
-type Props = { item: FeedItem };
+type Props = {
+  item: FeedItem;
+  /** Chiamata dal bottone "⋯" per eliminare il video (conferma gestita dal parent) */
+  onRequestDelete?: (item: FeedItem) => void;
+};
+
 type CommentNew = { authorId: string; authorName: string; text: string };
 
-export default function VideoCard({ item }: Props) {
+export default function VideoCard({ item, onRequestDelete }: Props) {
   const mainVideoRef = useRef<Video>(null);
   const replyPlayerRef = useRef<Video>(null);
   const pagerRef = useRef<ScrollView>(null);
@@ -164,6 +169,14 @@ export default function VideoCard({ item }: Props) {
     pagerRef.current?.scrollTo({ x: index === 0 ? 0 : styles.pagerWidth, y: 0, animated: true });
   };
 
+  const onPressDots = () => {
+    if (onRequestDelete) {
+      onRequestDelete(item);
+    } else {
+      Alert.alert("Elimina video", "Passa onRequestDelete dal parent per eliminare questo video.");
+    }
+  };
+
   return (
     <View style={styles.card}>
       {/* HEADER */}
@@ -180,7 +193,17 @@ export default function VideoCard({ item }: Props) {
             {!!item.albumTitle && <AlbumPill title={item.albumTitle} compact />}
           </View>
         </View>
-        <Ionicons name="ellipsis-horizontal" size={20} color={colors.muted} />
+
+        {/* 3 puntini → elimina video */}
+        <Pressable
+          onPress={onPressDots}
+          accessibilityRole="button"
+          accessibilityLabel="Elimina video"
+          hitSlop={8}
+          style={{ padding: 4, marginLeft: 6 }}
+        >
+          <Ionicons name="ellipsis-horizontal" size={20} color={colors.muted} />
+        </Pressable>
       </View>
 
       {/* TITLE + DESC */}
@@ -236,9 +259,7 @@ export default function VideoCard({ item }: Props) {
               onPress={() => onTabPress(0)}
               style={[styles.tabBtn, activeTab === 0 && styles.tabBtnActive]}
             >
-              <Text
-                style={[styles.tabText, activeTab === 0 && styles.tabTextActive]}
-              >
+              <Text style={[styles.tabText, activeTab === 0 && styles.tabTextActive]}>
                 Commenti
               </Text>
             </Pressable>
@@ -246,11 +267,8 @@ export default function VideoCard({ item }: Props) {
               onPress={() => onTabPress(1)}
               style={[styles.tabBtn, activeTab === 1 && styles.tabBtnActive]}
             >
-              <Text
-                style={[styles.tabText, activeTab === 1 && styles.tabTextActive]}
-              >
-                Risposte video{" "}
-                {videoReplies.length ? `(${videoReplies.length})` : ""}
+              <Text style={[styles.tabText, activeTab === 1 && styles.tabTextActive]}>
+                Risposte video {videoReplies.length ? `(${videoReplies.length})` : ""}
               </Text>
             </Pressable>
           </View>
@@ -263,17 +281,9 @@ export default function VideoCard({ item }: Props) {
                 return (
                   <View key={`${c.authorId}-${idx}`} style={styles.commentRow}>
                     {avatarUri ? (
-                      <Image
-                        source={{ uri: avatarUri }}
-                        style={styles.commentAvatar}
-                      />
+                      <Image source={{ uri: avatarUri }} style={styles.commentAvatar} />
                     ) : (
-                      <View
-                        style={[
-                          styles.commentAvatar,
-                          styles.commentAvatarFallback,
-                        ]}
-                      >
+                      <View style={[styles.commentAvatar, styles.commentAvatarFallback]}>
                         <Ionicons name="person" size={14} color={colors.white} />
                       </View>
                     )}
@@ -311,9 +321,7 @@ export default function VideoCard({ item }: Props) {
                 contentContainerStyle={styles.repliesRow}
               >
                 {videoReplies.length === 0 ? (
-                  <Text style={{ opacity: 0.6 }}>
-                    Ancora nessuna risposta video
-                  </Text>
+                  <Text style={{ opacity: 0.6 }}>Ancora nessuna risposta video</Text>
                 ) : (
                   videoReplies.map((r) => {
                     const selected = selectedReplyId === r.id;
@@ -321,10 +329,7 @@ export default function VideoCard({ item }: Props) {
                       <Pressable
                         key={r.id}
                         onPress={() => setSelectedReplyId(r.id)}
-                        style={[
-                          styles.replyCircle,
-                          selected && styles.replyCircleSelected,
-                        ]}
+                        style={[styles.replyCircle, selected && styles.replyCircleSelected]}
                       >
                         <Video
                           source={{ uri: r.uri }}
@@ -355,10 +360,7 @@ export default function VideoCard({ item }: Props) {
                     shouldPlay
                   />
                   {!!selectedReply.title && (
-                    <Text
-                      style={styles.replyPlayerTitle}
-                      numberOfLines={2}
-                    >
+                    <Text style={styles.replyPlayerTitle} numberOfLines={2}>
                       {selectedReply.title}
                     </Text>
                   )}

@@ -6,10 +6,8 @@ import TabNavigator from './TabNavigator';
 import LoginScreen from '../screens/Login/LoginScreen';
 import RegisterScreen from '../screens/Register/RegisterScreen';
 import AlbumDetail from '../screens/Profile/AlbumDetail';
-
-
-// Nuova schermata
 import GroupManageScreen from '../screens/Groups/GroupManageScreen';
+import SettingsScreen from '../screens/Settings/SettingsScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -17,13 +15,17 @@ export type RootStackParamList = {
   Register: undefined;
   AlbumDetail: { albumId: string };
   GroupManage: undefined;
+  Settings: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function StackNavigator() {
   return (
-    <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShadowVisible: false }}>
+    <Stack.Navigator
+      initialRouteName="Login"
+      screenOptions={{ headerShadowVisible: false }}
+    >
       <Stack.Screen
         name="Login"
         component={LoginScreen}
@@ -42,21 +44,26 @@ export default function StackNavigator() {
         options={{ headerShown: false }}
       />
 
-     <Stack.Screen
-  name="AlbumDetail"
-  component={AlbumDetail}
-  options={{
-    title: 'Dettagli Album',
-    headerShown: false, // 👈 nasconde l'header nativo
-  }}
-/>
-      {/* Gestione gruppi: header interno -> headerShown false */}
+      {/* Album detail: header gestito internamente */}
+      <Stack.Screen
+        name="AlbumDetail"
+        component={AlbumDetail}
+        options={{ headerShown: false }}
+      />
+
+      {/* Gestione gruppi: header interno */}
       <Stack.Screen
         name="GroupManage"
         component={GroupManageScreen}
         options={{ headerShown: false }}
       />
+
+      {/* Impostazioni (placeholder) */}
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ title: 'Impostazioni', headerShadowVisible: false }}
+      />
     </Stack.Navigator>
   );
 }
- 

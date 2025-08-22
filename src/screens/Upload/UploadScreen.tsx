@@ -230,7 +230,7 @@ export default function UploadScreen() {
       <View style={styles.header}>
         <View>
           <Text style={[typography.title, styles.headerTitle]}>Carica un video</Text>
-          <Text style={styles.headerSub}>Condividi momenti con i tuoi amici</Text>
+          <Text style={styles.headerSub}>Condividi i tuoi momenti preferiti con i tuoi amici</Text>
         </View>
         <View style={styles.headerActions} />
       </View>
@@ -327,7 +327,7 @@ export default function UploadScreen() {
               <View style={styles.sectionIconWrap}>
                 <Ionicons name="people-outline" size={16} color={colors.primaryDark} />
               </View>
-              <Text style={styles.sectionTitle}>Gruppi</Text>
+              <Text style={styles.sectionTitle}>Gruppi </Text>
             </View>
             <Pressable onPress={() => setGroupSheet(true)} style={styles.circleAddBtn} hitSlop={8}>
               <Ionicons name="add" size={18} color={colors.primaryDark} />
@@ -343,7 +343,7 @@ export default function UploadScreen() {
         </View>
 
         {/* ALBUM */}
-        <View style={styles.sectionCard}>
+        <View style={[styles.sectionCard, { marginBottom: -16 }]}> 
           <View style={styles.sectionHeader}>
             <View style={styles.sectionHeaderLeft}>
               <View style={styles.sectionIconWrap}>
@@ -398,8 +398,6 @@ export default function UploadScreen() {
           </View>
         </View>
 
-        {/* Spacer per non coprire l'ultimo campo con la bottom bar / tastiera */}
-        <View style={{ height: 120 }} />
       </View>
 
       {/* Bottom CTA bar (gradient) */}
